@@ -6,10 +6,12 @@ import { Icon } from "./icon"
 import { IconButton } from "./icon-button"
 import { Tooltip } from "./tooltip"
 import { useI18n } from "../context/i18n"
+import { clipboardWrite } from "../clipboard"
 
 export interface ToolErrorCardProps extends Omit<ComponentProps<typeof Card>, "children" | "variant"> {
   tool: string
   error: string
+  title?: string
   defaultOpen?: boolean
   subtitle?: string
   href?: string
@@ -23,8 +25,9 @@ export function ToolErrorCard(props: ToolErrorCardProps) {
   })
   const open = () => state.open
   const copied = () => state.copied
-  const [split, rest] = splitProps(props, ["tool", "error", "defaultOpen", "subtitle", "href"])
+  const [split, rest] = splitProps(props, ["tool", "error", "title", "defaultOpen", "subtitle", "href"])
   const name = createMemo(() => {
+    if (split.title) return split.title
     const map: Record<string, string> = {
       read: "ui.tool.read",
       list: "ui.tool.list",
@@ -68,7 +71,7 @@ export function ToolErrorCard(props: ToolErrorCardProps) {
   const copy = async () => {
     const text = cleaned()
     if (!text) return
-    await navigator.clipboard.writeText(text)
+    await clipboardWrite(text)
     setState("copied", true)
     setTimeout(() => setState("copied", false), 2000)
   }

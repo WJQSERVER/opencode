@@ -263,6 +263,9 @@ describe("session.retry.retryable", () => {
         message: "Subscription quota exceeded. You can continue using free models.",
         isRetryable: true,
         statusCode: 429,
+        responseHeaders: {
+          "retry-after": "19380",
+        },
         responseBody: JSON.stringify({
           type: "error",
           error: {
@@ -271,19 +274,20 @@ describe("session.retry.retryable", () => {
           },
           metadata: {
             workspace: "wrk_01K6XGM22R6FM8JVABE9XDQXGH",
-            limit: "5 hour",
-            resetAt: 19_380,
+            limitName: "5 hour",
           },
         }),
       }).toObject(),
     )
 
     expect(SessionRetry.retryable(error)).toEqual({
-      message: SessionRetry.PAYG_UPSELL_MESSAGE,
+      message:
+        "5 hour usage limit reached. It will reset in 5 hours 23 minutes. To continue using this model now, enable usage from your available balance - https://opencode.ai/workspace/wrk_01K6XGM22R6FM8JVABE9XDQXGH/go",
       action: {
         title: "Go limit reached",
-        message: "You hit your 5 hour limit. It will reset in 5 hours 23 minutes. You can also enable pay-as-you-go.",
-        label: "enable PAYG",
+        message:
+          "5 hour usage limit reached. It will reset in 5 hours 23 minutes. To continue using this model now, enable usage from your available balance",
+        label: "open settings",
         link: "https://opencode.ai/workspace/wrk_01K6XGM22R6FM8JVABE9XDQXGH/go",
       },
     })
