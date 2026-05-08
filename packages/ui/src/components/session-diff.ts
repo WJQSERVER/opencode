@@ -23,7 +23,25 @@ export type ViewDiff = {
   fileDiff: FileDiffMetadata
 }
 
+const MAX_CACHE = 200
 const cache = new Map<string, FileDiffMetadata>()
+
+function cacheGet(key: string): FileDiffMetadata | undefined {
+  const value = cache.get(key)
+  if (value !== undefined) {
+    cache.delete(key)
+    cache.set(key, value)
+  }
+  return value
+}
+
+function cacheSet(key: string, value: FileDiffMetadata) {
+  if (cache.size >= MAX_CACHE) {
+    const oldest = cache.keys().next().value
+    if (oldest !== undefined) cache.delete(oldest)
+  }
+  cache.set(key, value)
+}
 
 function patch(diff: ReviewDiff) {
   if (typeof diff.patch === "string") {
@@ -89,11 +107,11 @@ function patch(diff: ReviewDiff) {
 }
 
 function file(file: string, patch: string, before: string, after: string) {
-  const hit = cache.get(patch)
+  const hit = cacheGet(patch)
   if (hit) return hit
 
   const value = parseDiffFromFile({ name: file, contents: before }, { name: file, contents: after })
-  cache.set(patch, value)
+  cacheSet(patch, value)
   return value
 }
 
