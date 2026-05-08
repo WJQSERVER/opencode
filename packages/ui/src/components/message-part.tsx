@@ -680,16 +680,14 @@ export function AssistantParts(props: {
                 })
 
                 return (
-                  <Show when={message()}>
-                    <Show when={item()}>
-                      <Part
-                        part={item()!}
-                        message={message()!}
-                        showAssistantCopyPartID={props.showAssistantCopyPartID}
-                        turnDurationMs={props.turnDurationMs}
-                        defaultOpen={partDefaultOpen(item()!, props.shellToolDefaultOpen, props.editToolDefaultOpen)}
-                      />
-                    </Show>
+                  <Show when={message() && item()}>
+                    <Part
+                      part={item()!}
+                      message={message()!}
+                      showAssistantCopyPartID={props.showAssistantCopyPartID}
+                      turnDurationMs={props.turnDurationMs}
+                      defaultOpen={partDefaultOpen(item()!, props.shellToolDefaultOpen, props.editToolDefaultOpen)}
+                    />
                   </Show>
                 )
               })()}
