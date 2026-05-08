@@ -45,19 +45,8 @@ jobs:
         run: bun typecheck
 
   unit:
-    name: unit (${{ matrix.settings.name }})
-    strategy:
-      fail-fast: false
-      matrix:
-        settings:
-          - name: linux
-            host: ubuntu-latest
-          - name: windows
-            host: windows-latest
-    runs-on: ${{ matrix.settings.host }}
-    defaults:
-      run:
-        shell: bash
+    name: unit
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -88,15 +77,13 @@ jobs:
 
       - name: Run unit tests
         run: bun turbo test:ci
-        env:
-          OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER: ${{ runner.os == 'Windows' && 'true' || 'false' }}
 
       - name: Publish unit reports
         if: always()
         uses: mikepenz/action-junit-report@v6
         with:
           report_paths: packages/*/.artifacts/unit/junit.xml
-          check_name: "unit results (${{ matrix.settings.name }})"
+          check_name: "unit results"
           detailed_summary: true
           include_time_in_summary: true
           fail_on_failure: false
@@ -105,7 +92,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: unit-${{ matrix.settings.name }}-${{ github.run_attempt }}
+          name: unit-${{ github.run_attempt }}
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7

@@ -4,6 +4,18 @@
 - Local `main` ref may not exist; use `dev` or `origin/dev` for diffs.
 - Prefer automation: execute requested actions without confirmation unless blocked by missing info or safety/irreversibility.
 
+## Sensitive Actions — Always Ask First
+
+The following actions are irreversible or have side effects beyond the local environment. **Never perform them without explicit user instruction:**
+
+- `git push` (including `--force-with-lease`) to any remote
+- Creating or merging pull requests (`gh pr create`, `gh pr merge`), especially to upstream repositories
+- Opening issues, posting comments, or interacting with external services on behalf of the user
+- Modifying CI/CD workflows, release configs, or publishing settings
+- Any action that affects shared state (remote branches, published packages, deployed services)
+
+When in doubt, describe what you plan to do and ask for confirmation.
+
 ## Style Guide
 
 ### General Principles
