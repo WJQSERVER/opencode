@@ -609,25 +609,28 @@ export function AssistantParts(props: {
   const emptyParts: PartType[] = []
   const emptyTools: ToolPart[] = []
   const msgs = createMemo(() => index(props.messages))
-  const part = createMemo(
-    () =>
-      new Map(
-        props.messages.map((message) => [message.id, index(list(data.store.part?.[message.id], emptyParts))] as const),
-      ),
-  )
 
+  const partAndGrouped = createMemo(() => {
+    const partMap = new Map<string, Map<string, PartType>>()
+    const renderableItems: { messageID: string; part: PartType }[] = []
+    const showReasoning = props.showReasoningSummaries ?? true
+
+    for (const message of props.messages) {
+      const parts = list(data.store.part?.[message.id], emptyParts)
+      partMap.set(message.id, index(parts))
+      for (const p of parts) {
+        if (renderable(p, showReasoning)) {
+          renderableItems.push({ messageID: message.id, part: p })
+        }
+      }
+    }
+
+    return { part: partMap, grouped: groupParts(renderableItems) }
+  })
+
+  const part = createMemo(() => partAndGrouped().part)
   const grouped = createMemo(
-    () =>
-      groupParts(
-        props.messages.flatMap((message) =>
-          list(data.store.part?.[message.id], emptyParts)
-            .filter((part) => renderable(part, props.showReasoningSummaries ?? true))
-            .map((part) => ({
-              messageID: message.id,
-              part,
-            })),
-        ),
-      ),
+    () => partAndGrouped().grouped,
     [] as PartGroup[],
     { equals: sameGroups },
   )
@@ -1464,10 +1467,13 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
   )
   const text = () => (part().text ?? "").trim()
   const isLastTextPart = createMemo(() => {
-    const last = (data.store.part?.[props.message.id] ?? [])
-      .filter((item): item is TextPart => item?.type === "text" && !!item.text?.trim())
-      .at(-1)
-    return last?.id === part().id
+    const parts = data.store.part?.[props.message.id] as PartType[] | undefined
+    if (!parts) return false
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const item = parts[i]
+      if (item?.type === "text" && item.text?.trim()) return item.id === part().id
+    }
+    return false
   })
   const showCopy = createMemo(() => {
     if (props.message.role !== "assistant") return isLastTextPart()
