@@ -178,6 +178,8 @@ function markCodeLinks(root: HTMLDivElement) {
 function decorate(root: HTMLDivElement, labels: CopyLabels) {
   const blocks = Array.from(root.querySelectorAll("pre"))
   for (const block of blocks) {
+    const parent = block.parentElement
+    if (parent?.getAttribute("data-component") === "markdown-code") continue
     ensureCodeWrapper(block, labels)
   }
   markCodeLinks(root)
@@ -321,6 +323,12 @@ export function Markdown(
           setCopyState(toEl, labels, true)
         }
         if (fromEl.isEqualNode(toEl)) return false
+        return true
+      },
+      onBeforeElChildrenUpdated: (fromEl, toEl) => {
+        if (fromEl instanceof HTMLElement && toEl instanceof HTMLElement) {
+          if (fromEl.getAttribute("data-component") === "markdown-code" && fromEl.isEqualNode(toEl)) return false
+        }
         return true
       },
     })
