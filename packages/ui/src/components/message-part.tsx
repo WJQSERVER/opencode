@@ -616,18 +616,26 @@ export function AssistantParts(props: {
       ),
   )
 
+  let cachedGroupedKey: string | undefined
+  let cachedGrouped: PartGroup[] | undefined
   const grouped = createMemo(
-    () =>
-      groupParts(
-        props.messages.flatMap((message) =>
-          list(data.store.part?.[message.id], emptyParts)
-            .filter((part) => renderable(part, props.showReasoningSummaries ?? true))
-            .map((part) => ({
-              messageID: message.id,
-              part,
-            })),
-        ),
-      ),
+    () => {
+      let fp = ""
+      const items: { messageID: string; part: PartType }[] = []
+      for (const message of props.messages) {
+        for (const p of list(data.store.part?.[message.id], emptyParts)) {
+          if (renderable(p, props.showReasoningSummaries ?? true)) {
+            fp += message.id + ":" + p.id + ";"
+            items.push({ messageID: message.id, part: p })
+          }
+        }
+      }
+      if (fp === cachedGroupedKey && cachedGrouped) return cachedGrouped
+      const result = groupParts(items)
+      cachedGroupedKey = fp
+      cachedGrouped = result
+      return result
+    },
     [] as PartGroup[],
     { equals: sameGroups },
   )
@@ -836,16 +844,24 @@ export function AssistantMessageDisplay(props: {
 }) {
   const emptyTools: ToolPart[] = []
   const part = createMemo(() => index(props.parts))
+  let cachedGroupedKey: string | undefined
+  let cachedGrouped: PartGroup[] | undefined
   const grouped = createMemo(
-    () =>
-      groupParts(
-        props.parts
-          .filter((part) => renderable(part, props.showReasoningSummaries ?? true))
-          .map((part) => ({
-            messageID: props.message.id,
-            part,
-          })),
-      ),
+    () => {
+      let fp = ""
+      const items: { messageID: string; part: PartType }[] = []
+      for (const p of props.parts) {
+        if (renderable(p, props.showReasoningSummaries ?? true)) {
+          fp += p.id + ";"
+          items.push({ messageID: props.message.id, part: p })
+        }
+      }
+      if (fp === cachedGroupedKey && cachedGrouped) return cachedGrouped
+      const result = groupParts(items)
+      cachedGroupedKey = fp
+      cachedGrouped = result
+      return result
+    },
     [] as PartGroup[],
     { equals: sameGroups },
   )

@@ -47,10 +47,16 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
   const messages = createMemo(() => sync.data.messages[props.sessionID] ?? [])
   const renderedMessages = createMemo(() => messages().toReversed())
   const lastAssistant = createMemo(() => renderedMessages().findLast((message) => message.type === "assistant"))
-  const lastUserCreated = (index: number) =>
-    renderedMessages()
-      .slice(0, index)
-      .findLast((message) => message.type === "user")?.time.created
+  const lastUserCreatedMap = createMemo(() => {
+    const msgs = renderedMessages()
+    const map = new Array<number | undefined>(msgs.length)
+    let last: number | undefined
+    for (let i = 0; i < msgs.length; i++) {
+      map[i] = last
+      if (msgs[i].type === "user") last = msgs[i].time.created
+    }
+    return map
+  })
 
   createEffect(() => {
     void sync.session.message.sync(props.sessionID)
@@ -97,7 +103,7 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
                       last={lastAssistant()?.id === message.id}
                       syntax={syntax()}
                       subtleSyntax={subtleSyntax()}
-                      start={lastUserCreated(index())}
+                      start={lastUserCreatedMap()[index()]}
                     />
                   </Match>
                   <Match when={message.type === "synthetic"}>
@@ -566,7 +572,8 @@ function InlineTool(props: {
         const el = this as BoxRenderable
         const parent = el.parent
         if (!parent) return
-        const previous = parent.getChildren()[parent.getChildren().indexOf(el) - 1]
+        const children = parent.getChildren()
+        const previous = children[children.indexOf(el) - 1]
         if (!previous) {
           setMargin(0)
           return

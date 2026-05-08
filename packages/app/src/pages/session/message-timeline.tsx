@@ -249,6 +249,19 @@ export function MessageTimeline(props: {
     if (!id) return emptyMessages
     return sync.data.message[id] ?? emptyMessages
   })
+  const assistantByParent = createMemo(() => {
+    const map = new Map<string, AssistantMessage[]>()
+    for (const msg of sessionMessages()) {
+      if (msg.role !== "assistant") continue
+      let arr = map.get(msg.parentID)
+      if (!arr) {
+        arr = []
+        map.set(msg.parentID, arr)
+      }
+      arr.push(msg as AssistantMessage)
+    }
+    return map
+  })
   const pending = createMemo(() =>
     sessionMessages().findLast(
       (item): item is AssistantMessage => item.role === "assistant" && typeof item.time.completed !== "number",
@@ -1093,6 +1106,7 @@ export function MessageTimeline(props: {
                         sessionID={sessionID() ?? ""}
                         messageID={messageID}
                         messages={sessionMessages()}
+                        assistantByParent={assistantByParent()}
                         actions={props.actions}
                         active={active()}
                         status={active() ? sessionStatus() : undefined}

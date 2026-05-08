@@ -115,32 +115,46 @@ function clean(value: string) {
     .trim()
 }
 
+const headingCache = new WeakMap<object, string | undefined>()
 function heading(text: string) {
+  const cached = headingCache.get(text as any)
+  if (cached !== undefined) return cached === "" ? undefined : cached
+
   const markdown = text.replace(/\r\n?/g, "\n")
+  let result: string | undefined
 
   const html = markdown.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i)
   if (html?.[1]) {
     const value = clean(html[1].replace(/<[^>]+>/g, " "))
-    if (value) return value
+    if (value) result = value
   }
 
-  const atx = markdown.match(/^\s{0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+[ \t]*)?$/m)
-  if (atx?.[1]) {
-    const value = clean(atx[1])
-    if (value) return value
+  if (!result) {
+    const atx = markdown.match(/^\s{0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+[ \t]*)?$/m)
+    if (atx?.[1]) {
+      const value = clean(atx[1])
+      if (value) result = value
+    }
   }
 
-  const setext = markdown.match(/^([^\n]+)\n(?:=+|-+)\s*$/m)
-  if (setext?.[1]) {
-    const value = clean(setext[1])
-    if (value) return value
+  if (!result) {
+    const setext = markdown.match(/^([^\n]+)\n(?:=+|-+)\s*$/m)
+    if (setext?.[1]) {
+      const value = clean(setext[1])
+      if (value) result = value
+    }
   }
 
-  const strong = markdown.match(/^\s*(?:\*\*|__)(.+?)(?:\*\*|__)\s*$/m)
-  if (strong?.[1]) {
-    const value = clean(strong[1])
-    if (value) return value
+  if (!result) {
+    const strong = markdown.match(/^\s*(?:\*\*|__)(.+?)(?:\*\*|__)\s*$/m)
+    if (strong?.[1]) {
+      const value = clean(strong[1])
+      if (value) result = value
+    }
   }
+
+  headingCache.set(text as any, result ?? "")
+  return result
 }
 
 export function SessionTurn(
@@ -148,6 +162,7 @@ export function SessionTurn(
     sessionID: string
     messageID: string
     messages?: MessageType[]
+    assistantByParent?: Map<string, AssistantMessage[]>
     actions?: UserActions
     showReasoningSummaries?: boolean
     shellToolDefaultOpen?: boolean
@@ -265,6 +280,8 @@ export function SessionTurn(
     () => {
       const msg = message()
       if (!msg) return emptyAssistant
+
+      if (props.assistantByParent) return props.assistantByParent.get(msg.id) ?? emptyAssistant
 
       const messages = allMessages() ?? emptyMessages
       if (messageIndex() < 0) return emptyAssistant
