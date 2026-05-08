@@ -1,6 +1,5 @@
 import { marked } from "marked"
 import markedKatex from "marked-katex-extension"
-import markedShiki from "marked-shiki"
 import katex from "katex"
 import { bundledLanguages, type BundledLanguage } from "shiki"
 import { createSimpleContext } from "./helper"
@@ -434,6 +433,15 @@ async function highlightCodeBlocks(html: string): Promise<string> {
     preferredHighlighter: "shiki-wasm",
   })
 
+  const langs = new Set<string>()
+  for (const match of matches) {
+    const lang = match[1] || "text"
+    if (lang in bundledLanguages && !highlighter.getLoadedLanguages().includes(lang)) {
+      langs.add(lang)
+    }
+  }
+  await Promise.all([...langs].map((l) => highlighter.loadLanguage(l as BundledLanguage)))
+
   let result = html
   for (const match of matches) {
     const [fullMatch, lang, escapedCode] = match
@@ -444,13 +452,7 @@ async function highlightCodeBlocks(html: string): Promise<string> {
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
 
-    let language = lang || "text"
-    if (!(language in bundledLanguages)) {
-      language = "text"
-    }
-    if (!highlighter.getLoadedLanguages().includes(language)) {
-      await highlighter.loadLanguage(language as BundledLanguage)
-    }
+    const language = lang && lang in bundledLanguages ? lang : "text"
 
     const highlighted = highlighter.codeToHtml(code, {
       lang: language,
@@ -481,26 +483,6 @@ export const { use: useMarked, provider: MarkedProvider } = createSimpleContext(
         throwOnError: false,
         nonStandard: true,
       }),
-      markedShiki({
-        async highlight(code, lang) {
-          const highlighter = await getSharedHighlighter({
-            themes: ["OpenCode"],
-            langs: [],
-            preferredHighlighter: "shiki-wasm",
-          })
-          if (!(lang in bundledLanguages)) {
-            lang = "text"
-          }
-          if (!highlighter.getLoadedLanguages().includes(lang)) {
-            await highlighter.loadLanguage(lang as BundledLanguage)
-          }
-          return highlighter.codeToHtml(code, {
-            lang: lang || "text",
-            theme: "OpenCode",
-            tabindex: false,
-          })
-        },
-      }),
     )
 
     if (props.nativeParser) {
@@ -514,6 +496,11 @@ export const { use: useMarked, provider: MarkedProvider } = createSimpleContext(
       }
     }
 
-    return jsParser
+    return {
+      async parse(markdown: string): Promise<string> {
+        const html = jsParser.parse(markdown) as string
+        return highlightCodeBlocks(html)
+      },
+    }
   },
 })
