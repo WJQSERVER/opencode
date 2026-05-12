@@ -76,6 +76,18 @@ export function SessionSidePanel(props: {
   })
   const treeWidth = createMemo(() => (fileOpen() ? `${layout.fileTree.width()}px` : "0px"))
 
+  createEffect(() => {
+    console.debug("[session-review] review tab visibility conditions:", {
+      reviewTab: reviewTab(),
+      canReview: props.canReview(),
+      hasReview: props.hasReview(),
+      reviewOpen: reviewOpen(),
+      reviewCount: props.reviewCount(),
+      project: sync.project ? { id: sync.project.id, vcs: sync.project.vcs } : null,
+      diffsCount: props.diffs().length,
+    })
+  })
+
   const diffs = createMemo(() => props.diffs().filter(renderDiff))
   const diffFiles = createMemo(() => diffs().map((d) => d.file))
   const kinds = createMemo(() => {
