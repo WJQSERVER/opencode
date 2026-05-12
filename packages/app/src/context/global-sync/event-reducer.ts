@@ -190,7 +190,9 @@ export function applyDirectoryEvent(input: {
       }
       const result = Binary.search(messages, info.id, (m) => m.id)
       if (result.found) {
-        input.setStore("message", info.sessionID, result.index, reconcile(info))
+        input.setStore("message", info.sessionID, produce((draft) => {
+          Object.assign(draft[result.index], info)
+        }))
         break
       }
       input.setStore(
@@ -237,7 +239,9 @@ export function applyDirectoryEvent(input: {
       }
       const result = Binary.search(parts, part.id, (p) => p.id)
       if (result.found) {
-        input.setStore("part", part.messageID, result.index, reconcile(part))
+        input.setStore("part", part.messageID, produce((draft) => {
+          Object.assign(draft[result.index], part)
+        }))
         break
       }
       input.setStore(

@@ -71,6 +71,9 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
       }
     }
 
+    const FLUSH_BUDGET_MS = 8
+    const FLUSH_YIELD_EVERY = 16
+
     const flush = () => {
       if (timer) clearTimeout(timer)
       timer = undefined
@@ -85,14 +88,21 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
       coalesced.clear()
       staleDeltas.clear()
 
+      const start = Date.now()
       last = Date.now()
       batch(() => {
-        for (const event of events) {
+        for (let i = 0; i < events.length; i++) {
+          const event = events[i]
           if (skip && event.payload.type === "message.part.delta") {
             const props = event.payload.properties
             if (skip.has(deltaKey(event.directory, props.messageID, props.partID))) continue
           }
           emitter.emit(event.directory, event.payload)
+          if ((i & (FLUSH_YIELD_EVERY - 1)) === 0 && Date.now() - start > FLUSH_BUDGET_MS) {
+            queue.unshift(...events.slice(i + 1))
+            schedule()
+            return
+          }
         }
       })
 
