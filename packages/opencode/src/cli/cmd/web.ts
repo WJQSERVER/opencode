@@ -32,7 +32,7 @@ function getNetworkIPs() {
 export const WebCommand = effectCmd({
   command: "web",
   builder: (yargs) =>
-    withNetworkOptions(yargs).option("no-browser", {
+    withNetworkOptions(yargs).option("unpullup-browser", {
       type: "boolean",
       describe: "do not open a browser on startup",
       default: false,
@@ -76,13 +76,13 @@ export const WebCommand = effectCmd({
         )
       }
 
-      if (!args["no-browser"]) {
+      if (!args["unpullup-browser"]) {
         open(localhostUrl).catch(() => {})
       }
     } else {
       const displayUrl = server.url.toString()
       UI.println(UI.Style.TEXT_INFO_BOLD + "  Web interface:    ", UI.Style.TEXT_NORMAL, displayUrl)
-      if (!args["no-browser"]) {
+      if (!args["unpullup-browser"]) {
         open(displayUrl).catch(() => {})
       }
     }
