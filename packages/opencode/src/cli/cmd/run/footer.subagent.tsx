@@ -1,6 +1,7 @@
 /** @jsxImportSource @opentui/solid */
 import type { ScrollBoxRenderable } from "@opentui/core"
 import { useKeyboard } from "@opentui/solid"
+import "opentui-spinner/solid"
 import { createMemo, indexArray, mapArray } from "solid-js"
 import { SPINNER_FRAMES } from "../tui/component/spinner"
 import { RunEntryContent, separatorRows } from "./scrollback.writer"

@@ -6,9 +6,6 @@ import type { RGBA } from "@opentui/core"
 import { SpinnerRenderable } from "opentui-spinner"
 import { extend } from "@opentui/solid"
 
-extend({ spinner: SpinnerRenderable } as any)
-
-export { createColors, createFrames } from "../ui/spinner"
 export const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
 export function Spinner(props: { children?: JSX.Element; color?: RGBA }) {
