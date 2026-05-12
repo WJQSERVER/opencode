@@ -785,6 +785,16 @@ export default function Page() {
 
   createEffect(
     on(
+      () => [sdk.directory, params.id, globalSync.sseReconnectTick()] as const,
+      ([directory, id]) => {
+        if (!id) return
+        void sync.session.sync(id, { force: true })
+      },
+    ),
+  )
+
+  createEffect(
+    on(
       () => {
         const id = params.id
         return [

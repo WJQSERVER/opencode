@@ -9,7 +9,7 @@ import type {
 } from "@opencode-ai/sdk/v2/client"
 import { showToast } from "@opencode-ai/ui/toast"
 import { getFilename } from "@opencode-ai/core/util/path"
-import { batch, createContext, getOwner, onCleanup, onMount, type ParentProps, untrack, useContext } from "solid-js"
+import { batch, createContext, createSignal, getOwner, onCleanup, onMount, type ParentProps, untrack, useContext } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import type { InitError } from "../pages/error"
@@ -71,6 +71,8 @@ function createGlobalSync() {
   const language = useLanguage()
   const owner = getOwner()
   if (!owner) throw new Error("GlobalSync must be created within owner")
+
+  const [sseReconnectTick, triggerReconnect] = createSignal(0)
 
   const sdkCache = new Map<string, OpencodeClient>()
   const booting = new Map<string, Promise<void>>()
@@ -348,6 +350,7 @@ function createGlobalSync() {
       })
       if (event.type === "server.connected" || event.type === "global.disposed") {
         if (recent) return
+        triggerReconnect((n) => n + 1)
         for (const directory of Object.keys(children.children)) {
           queue.push(directory)
         }
@@ -418,6 +421,7 @@ function createGlobalSync() {
   return {
     data: globalStore,
     set,
+    sseReconnectTick,
     get ready() {
       return globalStore.ready
     },
