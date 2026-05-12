@@ -234,7 +234,7 @@ export function SessionTurn(
     const msg = message()
     if (!msg) return emptyParts
     return list(data.store.part?.[msg.id], emptyParts)
-  })
+  }, emptyParts, { equals: same })
 
   const compaction = createMemo(() => parts().find((part) => part.type === "compaction"))
 

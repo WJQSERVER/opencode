@@ -65,6 +65,10 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
         const part = payload.properties.part
         return `message.part.updated:${directory}:${part.messageID}:${part.id}`
       }
+      if (payload.type === "message.part.delta") {
+        const p = payload.properties
+        return `message.part.delta:${directory}:${p.messageID}:${p.partID}:${p.field}`
+      }
     }
 
     const flush = () => {
@@ -166,7 +170,14 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
               if (k) {
                 const i = coalesced.get(k)
                 if (i !== undefined) {
-                  queue[i] = { directory, payload }
+                  if (payload.type === "message.part.delta") {
+                    const existing = queue[i].payload
+                    if (existing.type === "message.part.delta") {
+                      (existing.properties as any).delta += payload.properties.delta
+                    }
+                  } else {
+                    queue[i] = { directory, payload }
+                  }
                   if (payload.type === "message.part.updated") {
                     const part = payload.properties.part
                     staleDeltas.add(deltaKey(directory, part.messageID, part.id))

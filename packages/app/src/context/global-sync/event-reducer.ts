@@ -178,7 +178,7 @@ export function applyDirectoryEvent(input: {
     }
     case "session.status": {
       const props = event.properties as { sessionID: string; status: SessionStatus }
-      input.setStore("session_status", props.sessionID, reconcile(props.status))
+      input.setStore("session_status", props.sessionID, props.status)
       break
     }
     case "message.updated": {
