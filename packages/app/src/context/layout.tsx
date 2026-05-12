@@ -728,12 +728,6 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         const s = createMemo(() => store.sessionView[key()] ?? { scroll: {} })
         const terminalOpened = createMemo(() => store.terminal?.opened ?? false)
         const reviewPanelOpened = createMemo(() => store.review?.panelOpened ?? true)
-        // [review-debug] #10: reviewPanel 持久化状态
-        if (typeof window !== "undefined") {
-          // 只在首次打印一次，避免刷屏
-          const _debugKey = `[review-debug] reviewPanelOpen initial:`
-          queueMicrotask(() => console.debug(_debugKey, reviewPanelOpened(), "store.review:", store.review))
-        }
 
         function setTerminalOpened(next: boolean) {
           const current = store.terminal

@@ -19,15 +19,7 @@ function object(value: unknown): value is Record<string, unknown> {
 
 export function diffs(value: unknown): Diff[] {
   if (Array.isArray(value) && value.every(diff)) return value
-  if (Array.isArray(value)) {
-    const before = value.length
-    const filtered = value.filter(diff)
-    if (before > 0 && filtered.length === 0) {
-      const sample = value[0]
-      console.debug("[review-debug] utils/diffs: ALL items rejected!", { before, after: filtered.length, sample: sample && typeof sample === "object" ? Object.keys(sample) : sample })
-    }
-    return filtered
-  }
+  if (Array.isArray(value)) return value.filter(diff)
   if (diff(value)) return [value]
   if (!object(value)) return []
   return Object.values(value).filter(diff)

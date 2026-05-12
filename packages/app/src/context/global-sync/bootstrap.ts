@@ -98,7 +98,11 @@ export const loadProjectsQuery = (sdk: OpencodeClient) =>
     gcTime: 60_000,
     queryFn: () =>
       retry(() =>
-        sdk.project.list().then((r) => r.data?.map((x) => ({ ...x, path: x.path ?? "" })) ?? []),
+        sdk.project.list().then((r) =>
+          r.data
+            ?.map((x) => ({ ...x, path: x.path ?? "" }))
+            .sort((a, b) => a.id.localeCompare(b.id)) ?? [],
+        ),
       ),
   })
 
