@@ -10,7 +10,7 @@ import { useFileComponent } from "../context/file"
 
 import { Binary } from "@opencode-ai/core/util/binary"
 import { getDirectory, getFilename } from "@opencode-ai/core/util/path"
-import { createMemo, For, on, ParentProps, Show } from "solid-js"
+import { createMemo, For, on, ParentProps, Show, untrack } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Dynamic } from "solid-js/web"
 import { AssistantParts, Message, MessageDivider, PART_MAPPING, type UserActions } from "./message-part"
@@ -354,7 +354,8 @@ export function SessionTurn(
     let reason: string | undefined
     const show = showReasoningSummaries()
     for (const message of assistantMessages()) {
-      for (const part of list(data.store.part?.[message.id], emptyParts)) {
+      const parts = untrack(() => list(data.store.part?.[message.id], emptyParts))
+      for (const part of parts) {
         if (partState(part, show) === "visible") {
           visible++
         }
