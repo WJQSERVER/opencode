@@ -86,6 +86,7 @@ function showErrors(input: {
 export const loadGlobalConfigQuery = (sdk: OpencodeClient) =>
   queryOptions({
     queryKey: ["config"],
+    retry: false,
     staleTime: 60_000,
     gcTime: 120_000,
     queryFn: () => retry(() => sdk.global.config.get().then((x) => x.data!)),
@@ -94,14 +95,14 @@ export const loadGlobalConfigQuery = (sdk: OpencodeClient) =>
 export const loadProjectsQuery = (sdk: OpencodeClient) =>
   queryOptions({
     queryKey: ["project"],
+    retry: false,
     staleTime: 30_000,
     gcTime: 60_000,
     queryFn: () =>
       retry(() =>
         sdk.project.list().then((r) =>
           r.data
-            ?.map((x) => ({ ...x, path: x.path ?? "" }))
-            .sort((a, b) => a.id.localeCompare(b.id)) ?? [],
+            ?.sort((a, b) => a.id.localeCompare(b.id)) ?? [],
         ),
       ),
   })
@@ -123,13 +124,13 @@ export async function bootstrapGlobal(input: {
         .fetchQuery(loadProjectsQuery(input.globalSDK))
         .then((data) => input.setGlobalStore("project", data)),
   ]
-  await runAll(slow)
-  // showErrors({
-  //   errors: errors(),
-  //   title: input.requestFailedTitle,
-  //   translate: input.translate,
-  //   formatMoreCount: input.formatMoreCount,
-  // })
+  const globalBootResult = await runAll(slow)
+  showErrors({
+    errors: errors(globalBootResult),
+    title: input.requestFailedTitle,
+    translate: input.translate,
+    formatMoreCount: input.formatMoreCount,
+  })
 }
 
 function groupBySession<T extends { id: string; sessionID: string }>(input: T[]) {
@@ -183,18 +184,21 @@ function warmSessions(input: {
 export const loadProvidersQuery = (directory: string | null, sdk: OpencodeClient) =>
   queryOptions({
     queryKey: [directory, "providers"],
+    retry: false,
     queryFn: () => retry(() => sdk.provider.list().then((x) => normalizeProviderList(x.data!))),
   })
 
 export const loadAgentsQuery = (directory: string | null, sdk: OpencodeClient) =>
   queryOptions({
     queryKey: [directory, "agents"],
+    retry: false,
     queryFn: () => retry(() => sdk.app.agents().then((x) => normalizeAgentList(x.data))),
   })
 
 export const loadPathQuery = (directory: string | null, sdk: OpencodeClient) =>
   queryOptions<Path>({
     queryKey: [directory, "path"],
+    retry: false,
     queryFn: () => retry(() => sdk.path.get().then((x) => x.data!)),
   })
 

@@ -76,7 +76,7 @@ export function cleanupDroppedSessionCaches(
     ...Object.keys(store.question),
     ...Object.keys(store.session_status),
     ...Object.values(store.part)
-      .map((parts) => parts?.find((part) => !!part?.sessionID)?.sessionID)
+      .flatMap((parts) => parts?.map((part) => part?.sessionID) ?? [])
       .filter((sessionID): sessionID is string => !!sessionID),
   ].filter((sessionID, index, list) => !keep.has(sessionID) && list.indexOf(sessionID) === index)
   if (stale.length === 0) return
@@ -262,28 +262,25 @@ export function applyDirectoryEvent(input: {
       )
       const parts = input.store.part[props.messageID]
       if (!parts) break
-      const result = Binary.search(parts, props.partID, (p) => p.id)
-      if (result.found) {
-        input.setStore(
-          produce((draft) => {
-            const list = draft.part[props.messageID]
-            if (!list) return
-            const next = Binary.search(list, props.partID, (p) => p.id)
-            if (!next.found) return
-            list.splice(next.index, 1)
-            if (list.length === 0) delete draft.part[props.messageID]
-          }),
-        )
-      }
+      input.setStore(
+        produce((draft) => {
+          const list = draft.part[props.messageID]
+          if (!list) return
+          const next = Binary.search(list, props.partID, (p) => p.id)
+          if (!next.found) return
+          list.splice(next.index, 1)
+          if (list.length === 0) delete draft.part[props.messageID]
+        }),
+      )
       break
     }
     case "message.part.delta": {
       const props = event.properties as { messageID: string; partID: string; field: string; delta: string }
+      input.setStore("part_text_accum_delta", props.partID, (existing) => (existing ?? "") + props.delta)
       const parts = input.store.part[props.messageID]
       if (!parts) break
       const result = Binary.search(parts, props.partID, (p) => p.id)
       if (!result.found) break
-      input.setStore("part_text_accum_delta", props.partID, (existing) => (existing ?? "") + props.delta)
       input.setStore(
         "part",
         props.messageID,

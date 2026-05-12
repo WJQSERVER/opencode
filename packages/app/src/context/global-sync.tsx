@@ -376,6 +376,9 @@ function createGlobalSync() {
         void queryClient.fetchQuery(loadLspQuery(key, sdkFor(directory)))
       },
     })
+    if (event.type === "vcs.branch.updated") {
+      queryClient.invalidateQueries({ queryKey: ["session-vcs", directory] })
+    }
   })
 
   onCleanup(unsub)
@@ -417,7 +420,7 @@ function createGlobalSync() {
 
   const updateConfigMutation = useMutation(() => ({
     mutationFn: (config: Config) => globalSDK.client.global.config.update({ config }),
-    onSuccess: () => bootstrap.refetch(),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["config"] }) },
   }))
 
   return {

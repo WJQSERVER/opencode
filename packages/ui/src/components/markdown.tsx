@@ -69,14 +69,10 @@ type CopyLabels = {
 const urlPattern = /^https?:\/\/[^\s<>()`"']+$/
 
 function codeUrl(text: string) {
-  const href = text.trim().replace(/[),.;!?]+$/, "")
-  if (!urlPattern.test(href)) return
-  try {
-    const url = new URL(href)
-    return url.toString()
-  } catch {
-    return
-  }
+  const href = text.trim()
+  if (urlPattern.test(href)) return href
+  const cleaned = href.replace(/[),.;!?]+$/, "")
+  if (urlPattern.test(cleaned)) return cleaned
 }
 
 function createIcon(path: string, slot: string) {

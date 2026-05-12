@@ -107,7 +107,7 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
 
     function pruneResponded(now: number) {
       for (const [id, ts] of responded) {
-        if (now - ts < RESPONDED_TTL_MS) break
+        if (now - ts < RESPONDED_TTL_MS) continue
         responded.delete(id)
       }
 
