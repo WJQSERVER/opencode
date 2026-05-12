@@ -85,6 +85,7 @@ export function SessionSidePanel(props: {
       reviewCount: props.reviewCount(),
       project: sync.project ? { id: sync.project.id, vcs: sync.project.vcs } : null,
       diffsCount: props.diffs().length,
+      activeTab: activeTab(),
     })
   })
 
@@ -160,6 +161,17 @@ export function SessionSidePanel(props: {
   const openedTabs = tabState.openedTabs
   const activeTab = tabState.activeTab
   const activeFileTab = tabState.activeFileTab
+
+  createEffect(() => {
+    console.debug("[session-review] createSessionTabs conditions:", {
+      activeTab: activeTab(),
+      review: reviewTab(),
+      hasReview: props.canReview(),
+      "review() && hasReview()": reviewTab() && props.canReview(),
+      isDesktop: isDesktop(),
+      project: sync.project ? sync.project.id : null,
+    })
+  })
 
   const fileTreeTab = () => layout.fileTree.tab()
 
