@@ -1,4 +1,4 @@
-import { createEffect, createMemo, on, onCleanup } from "solid-js"
+import { createEffect, createMemo, on, onCleanup, untrack } from "solid-js"
 import { createStore } from "solid-js/store"
 import type { PermissionRequest, QuestionRequest, Todo } from "@opencode-ai/sdk/v2"
 import { useParams } from "@solidjs/router"
@@ -32,13 +32,21 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
   const permission = usePermission()
 
   const questionRequest = createMemo((): QuestionRequest | undefined => {
-    return sessionQuestionRequest(sync.data.session, sync.data.question, params.id)
+    const id = params.id
+    if (!id) return undefined
+    sync.data.question[id]
+    sync.data.permission[id]
+    return untrack(() => sessionQuestionRequest(sync.data.session, sync.data.question, id))
   })
 
   const permissionRequest = createMemo((): PermissionRequest | undefined => {
-    return sessionPermissionRequest(sync.data.session, sync.data.permission, params.id, (item) => {
+    const id = params.id
+    if (!id) return undefined
+    sync.data.question[id]
+    sync.data.permission[id]
+    return untrack(() => sessionPermissionRequest(sync.data.session, sync.data.permission, id, (item) => {
       return !permission.autoResponds(item, sdk.directory)
-    })
+    }))
   })
 
   const blocked = createMemo(() => {

@@ -86,7 +86,40 @@ function showErrors(input: {
 export const loadGlobalConfigQuery = (sdk: OpencodeClient) =>
   queryOptions({
     queryKey: ["config"],
+    staleTime: 60_000,
+    gcTime: 120_000,
     queryFn: () => retry(() => sdk.global.config.get().then((x) => x.data!)),
+  })
+
+export const loadProjectsQuery = (sdk: OpencodeClient) =>
+  queryOptions({
+    queryKey: ["project"],
+    staleTime: 30_000,
+    gcTime: 60_000,
+    queryFn: () =>
+      retry(() =>
+        sdk.project.list().then((r) => r.data?.map((x) => ({ ...x, path: x.path ?? "" })) ?? []),
+      ),
+  })
+
+export const loadPathQuery = (sdk: OpencodeClient) =>
+  queryOptions({
+    queryKey: ["path"],
+    staleTime: 30_000,
+    gcTime: 60_000,
+    queryFn: () => retry(() => sdk.global.path.get().then((x) => x.data!)),
+  })
+
+export const loadProvidersQuery = (sdk: OpencodeClient) =>
+  queryOptions({
+    queryKey: ["providers"],
+    staleTime: 30_000,
+    gcTime: 60_000,
+    queryFn: () =>
+      Promise.all([
+        retry(() => sdk.global.providers.list().then((r) => r.data ?? [])),
+        retry(() => sdk.global.providers.auth().then((r) => r.data ?? [])),
+      ]).then(([provider, provider_auth]) => ({ provider, provider_auth })),
   })
 
 export const loadProjectsQuery = (sdk: OpencodeClient) =>

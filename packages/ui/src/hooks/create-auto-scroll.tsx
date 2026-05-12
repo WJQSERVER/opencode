@@ -204,14 +204,16 @@ export function createAutoScroll(options: AutoScrollOptions) {
     }),
   )
 
-  createEffect(() => {
-    // Track `userScrolled` even before `scrollRef` is attached, so we can
-    // update overflow anchoring once the element exists.
-    store.userScrolled
-    const el = store.scrollRef
-    if (!el) return
-    updateOverflowAnchor(el)
-  })
+  createEffect(
+    on(
+      () => store.userScrolled,
+      (scrolled) => {
+        const el = store.scrollRef
+        if (!el) return
+        el.style.overflowAnchor = scrolled ? "auto" : "none"
+      },
+    ),
+  )
 
   createEventListener(() => store.scrollRef, "wheel", handleWheel, { passive: true })
 

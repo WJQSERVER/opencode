@@ -154,6 +154,7 @@ export function SessionTurn(
     sessionID: string
     messageID: string
     messages?: MessageType[]
+    assistantMap?: Map<string, AssistantMessage[]>
     actions?: UserActions
     showReasoningSummaries?: boolean
     shellToolDefaultOpen?: boolean
@@ -272,6 +273,12 @@ export function SessionTurn(
     () => {
       const msg = message()
       if (!msg) return emptyAssistant
+
+      const map = props.assistantMap
+      if (map) {
+        const result = map.get(msg.id)
+        return result ?? emptyAssistant
+      }
 
       const messages = allMessages() ?? emptyMessages
       if (messageIndex() < 0) return emptyAssistant
