@@ -90,6 +90,15 @@ export function SessionSidePanel(props: {
   })
 
   const diffs = createMemo(() => props.diffs().filter(renderDiff))
+  createEffect(() => {
+    const raw = props.diffs()
+    const filtered = diffs()
+    console.debug("[review-debug] side-panel renderDiff filter:", "raw:", raw.length, "filtered:", filtered.length, "dropped:", raw.length - filtered.length)
+    if (raw.length > 0 && filtered.length === 0) {
+      const sample = raw[0]
+      console.debug("[review-debug] side-panel dropped diff sample:", { hasFile: "file" in sample, fileType: typeof (sample as any).file, keys: Object.keys(sample) })
+    }
+  })
   const diffFiles = createMemo(() => diffs().map((d) => d.file))
   const kinds = createMemo(() => {
     const merge = (a: "add" | "del" | "mix" | undefined, b: "add" | "del" | "mix") => {

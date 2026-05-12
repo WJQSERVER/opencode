@@ -434,7 +434,14 @@ export default function Page() {
   const isChildSession = createMemo(() => !!info()?.parentID)
   const diffs = createMemo(() => (params.id ? list(sync.data.session_diff[params.id]) : []))
   const canReview = createMemo(() => !!sync.project)
-  const reviewTab = createMemo(() => isDesktop())
+  const reviewTab = createMemo(() => {
+    const result = isDesktop()
+    console.debug("[review-debug] reviewTab (isDesktop):", result)
+    return result
+  })
+  createEffect(() => {
+    console.debug("[review-debug] canReview:", !!sync.project, "sync.project:", sync.project?.id ?? null, "sync.project?.vcs:", sync.project?.vcs ?? null)
+  })
   const tabState = createSessionTabs({
     tabs,
     pathFromTab: file.pathFromTab,
@@ -444,6 +451,12 @@ export default function Page() {
   })
   const activeTab = tabState.activeTab
   const activeFileTab = tabState.activeFileTab
+  createEffect(() => {
+    const a = activeTab()
+    const f = activeFileTab()
+    const t = tabs().active()
+    console.debug("[review-debug] activeTab:", a, "activeFileTab:", f, "tabs().active():", t, "isDesktop:", isDesktop(), "hasReview:", hasReview(), "canReview:", canReview())
+  })
   const revertMessageID = createMemo(() => info()?.revert?.messageID)
   const messages = createMemo(() => (params.id ? (sync.data.message[params.id] ?? []) : []))
   const messagesReady = createMemo(() => {
@@ -536,6 +549,7 @@ export default function Page() {
   createEffect(on(sessionKey, (key, prev) => {
     if (key !== prev) {
       setStore("deferRender", true)
+      console.debug("[review-debug] deferRender: true (sessionKey changed)", key, prev)
       requestAnimationFrame(() => {
         setTimeout(() => setStore("deferRender", false), 0)
       })
@@ -562,6 +576,11 @@ export default function Page() {
   }, { defer: true }))
 
   const turnDiffs = createMemo(() => list(lastUserMessage()?.summary?.diffs))
+  createEffect(() => {
+    const t = turnDiffs()
+    const msg = lastUserMessage()
+    console.debug("[review-debug] turnDiffs:", t.length, "lastUserMessage:", msg?.id ?? null, "hasSummary:", !!msg?.summary, "hasDiffs:", !!msg?.summary?.diffs)
+  })
   const nogit = createMemo(() => !!sync.project && sync.project.vcs !== "git")
   const changesOptions = createMemo<ChangeMode[]>(() => {
     const list: ChangeMode[] = []
@@ -577,12 +596,19 @@ export default function Page() {
     list.push("turn")
     return list
   })
+  createEffect(() => {
+    const options = changesOptions()
+    console.debug("[review-debug] changesOptions:", options, "store.changes:", store.changes, "match:", options.includes(store.changes))
+  })
   const mobileChanges = createMemo(() => !isDesktop() && store.mobileTab === "changes")
   const wantsReview = createMemo(() =>
     isDesktop()
       ? desktopFileTreeOpen() || (desktopReviewOpen() && activeTab() === "review")
       : store.mobileTab === "changes",
   )
+  createEffect(() => {
+    console.debug("[review-debug] wantsReview:", wantsReview(), "desktopFileTreeOpen:", desktopFileTreeOpen(), "desktopReviewOpen:", desktopReviewOpen(), "activeTab:", activeTab())
+  })
   const vcsMode = createMemo<VcsMode | undefined>(() => {
     if (store.changes === "git" || store.changes === "branch") return store.changes
   })
@@ -592,6 +618,7 @@ export default function Page() {
   const vcsQuery = createQuery(() => {
     const mode = vcsMode()
     const enabled = wantsReview() && sync.project?.vcs === "git"
+    console.debug("[review-debug] vcsQuery config:", { mode, enabled, wantsReview: wantsReview(), vcs: sync.project?.vcs ?? null })
 
     return {
       queryKey: [...vcsKey(), mode] as const,
@@ -617,8 +644,15 @@ export default function Page() {
       return vcsQuery.isFetched ? (vcsQuery.data ?? []) : []
     return turnDiffs()
   }
+  createEffect(() => {
+    const diffs = reviewDiffs()
+    console.debug("[review-debug] reviewDiffs:", diffs.length, "store.changes:", store.changes, "isFetched:", vcsQuery.isFetched, "isPending:", vcsQuery.isPending, "vcsError:", vcsQuery.error ?? null)
+  })
   const reviewCount = () => reviewDiffs().length
   const hasReview = () => reviewCount() > 0
+  createEffect(() => {
+    console.debug("[review-debug] hasReview vs canReview mismatch check:", { hasReview: hasReview(), canReview: canReview(), reviewCount: reviewCount() })
+  })
   const reviewReady = () => {
     if (store.changes === "git" || store.changes === "branch") return !vcsQuery.isPending
     return true
