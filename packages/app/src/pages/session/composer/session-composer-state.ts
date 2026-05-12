@@ -1,5 +1,5 @@
 import { createEffect, createMemo, on, onCleanup, untrack } from "solid-js"
-import { createStore } from "solid-js/store"
+import { createStore, produce } from "solid-js/store"
 import type { PermissionRequest, QuestionRequest, Todo } from "@opencode-ai/sdk/v2"
 import { useParams } from "@solidjs/router"
 import { showToast } from "@opencode-ai/ui/toast"
@@ -93,6 +93,14 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
     if (store.responding === perm.id) return
 
     setStore("responding", perm.id)
+
+    sync.set(produce((draft) => {
+      const permissions = draft.permission[perm.sessionID]
+      if (!permissions) return
+      const idx = permissions.findIndex((p) => p.id === perm.id)
+      if (idx >= 0) permissions.splice(idx, 1)
+    }))
+
     sdk.client.permission
       .respond({ sessionID: perm.sessionID, permissionID: perm.id, response })
       .catch((err: unknown) => {
