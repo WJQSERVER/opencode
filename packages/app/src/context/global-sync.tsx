@@ -62,17 +62,9 @@ export const loadMcpQuery = (directory: string, sdk: OpencodeClient) =>
 
 export const loadLspQuery = (directory: string, sdk: OpencodeClient) =>
   queryOptions({
-    queryKey: lspQueryKey(directory),
+    queryKey: [directory, "lsp"] as const,
     staleTime: 15_000,
     gcTime: 30_000,
-    queryFn: () => sdk.lsp.status().then((r) => r.data ?? []),
-  })
-
-export const lspQueryKey = (directory: string) => [directory, "lsp"] as const
-
-export const loadLspQuery = (directory: string, sdk: OpencodeClient) =>
-  queryOptions({
-    queryKey: lspQueryKey(directory),
     queryFn: () => sdk.lsp.status().then((r) => r.data ?? []),
   })
 
