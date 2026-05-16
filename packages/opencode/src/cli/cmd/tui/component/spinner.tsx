@@ -4,6 +4,7 @@ import { useKV } from "../context/kv"
 import type { JSX } from "@opentui/solid"
 import type { RGBA } from "@opentui/core"
 import { SpinnerRenderable } from "opentui-spinner"
+import "opentui-spinner/solid"
 import { extend } from "@opentui/solid"
 
 export const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
