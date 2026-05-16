@@ -1517,8 +1517,12 @@ export const layer = Layer.effect(
           delete options.fetch
         }
 
+        const noIncludeUsagePrefixes = ["mimo", "glm", "qwen"]
+        const modelId = model.api.id.toLowerCase()
         if (model.api.npm.includes("@ai-sdk/openai-compatible") && options["includeUsage"] !== false) {
-          options["includeUsage"] = true
+          if (!noIncludeUsagePrefixes.some((p) => modelId.startsWith(p))) {
+            options["includeUsage"] = true
+          }
         }
 
         const baseURL = iife(() => {
