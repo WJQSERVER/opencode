@@ -1519,10 +1519,10 @@ export const layer = Layer.effect(
 
         const noIncludeUsagePrefixes = ["mimo", "glm", "qwen"]
         const modelId = model.api.id.toLowerCase()
-        if (model.api.npm.includes("@ai-sdk/openai-compatible") && options["includeUsage"] !== false) {
-          if (noIncludeUsagePrefixes.some((p) => modelId.startsWith(p))) {
-            options["includeUsage"] = false
-          } else {
+        if (model.api.npm.includes("@ai-sdk/openai-compatible")) {
+          if ("includeUsage" in options) {
+            if (options["includeUsage"] !== false) options["includeUsage"] = true
+          } else if (!noIncludeUsagePrefixes.some((p) => modelId.startsWith(p))) {
             options["includeUsage"] = true
           }
         }
