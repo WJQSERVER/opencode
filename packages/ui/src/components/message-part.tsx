@@ -57,6 +57,7 @@ import { patchFiles } from "./apply-patch-file"
 import { animate } from "motion"
 import { useLocation } from "@solidjs/router"
 import { attached, inline, kind } from "./message-file"
+import { readPartText } from "./message-part-text"
 
 async function writeClipboard(text: string): Promise<boolean> {
   const body = typeof document === "undefined" ? undefined : document.body
@@ -174,7 +175,10 @@ export interface MessagePartProps {
   message: MessageType
   hideDetails?: boolean
   defaultOpen?: boolean
+  toolOpen?: boolean
+  onToolOpenChange?: (open: boolean) => void
   deferToolContent?: boolean
+  virtualizeDiff?: boolean
   showAssistantCopyPartID?: string | null
   turnDurationMs?: number
 }
@@ -289,7 +293,7 @@ function getDirectory(path: string | undefined) {
 }
 
 import type { IconProps } from "./icon"
-import { normalize } from "./session-diff"
+import { normalize, resolveFileDiff } from "./session-diff"
 
 export type ToolInfo = {
   icon: IconProps["name"]
@@ -930,7 +934,7 @@ export function AssistantMessageDisplay(props: {
   )
 }
 
-export function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean }) {
+export function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean; onSizeChange?: () => void }) {
   const i18n = useI18n()
   const [open, setOpen] = createSignal(false)
   const pending = createMemo(
@@ -938,11 +942,15 @@ export function ContextToolGroup(props: { parts: ToolPart[]; busy?: boolean }) {
       !!props.busy || props.parts.some((part) => part.state.status === "pending" || part.state.status === "running"),
   )
   const summary = createMemo(() => contextToolSummary(props.parts))
+  const handleOpenChange = (value: boolean) => {
+    setOpen(value)
+    props.onSizeChange?.()
+  }
 
   return (
     <Collapsible
       open={open()}
-      onOpenChange={setOpen}
+      onOpenChange={handleOpenChange}
       variant="ghost"
       class="tool-collapsible"
       data-timeline-part-ids={props.parts.map((part) => part.id).join(",")}
@@ -1063,7 +1071,7 @@ export function UserMessageDisplay(props: { message: UserMessage; parts: PartTyp
     const providerID = props.message.model?.providerID
     const modelID = props.message.model?.modelID
     if (!providerID || !modelID) return ""
-    const match = data.store.provider?.all?.find((p) => p.id === providerID)
+    const match = data.store.provider?.all?.get(providerID)
     return match?.models?.[modelID]?.name ?? modelID
   })
   const timefmt = createMemo(() => new Intl.DateTimeFormat(i18n.locale(), { timeStyle: "short" }))
@@ -1261,7 +1269,10 @@ export function Part(props: MessagePartProps) {
         message={props.message}
         hideDetails={props.hideDetails}
         defaultOpen={props.defaultOpen}
+        toolOpen={props.toolOpen}
+        onToolOpenChange={props.onToolOpenChange}
         deferToolContent={props.deferToolContent}
+        virtualizeDiff={props.virtualizeDiff}
         showAssistantCopyPartID={props.showAssistantCopyPartID}
         turnDurationMs={props.turnDurationMs}
       />
@@ -1278,7 +1289,10 @@ export interface ToolProps {
   status?: string
   hideDetails?: boolean
   defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   deferContent?: boolean
+  virtualizeDiff?: boolean
   forceOpen?: boolean
   locked?: boolean
 }
@@ -1376,6 +1390,8 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
   })
 
   const render = createMemo(() => ToolRegistry.render(part().tool) ?? GenericTool)
+  const controlledOpen = () => (props.onToolOpenChange ? (props.toolOpen ?? props.defaultOpen) : undefined)
+  const handleToolOpenChange = (open: boolean) => props.onToolOpenChange?.(open)
 
   return (
     <Show when={!hideQuestion()}>
@@ -1399,6 +1415,8 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
                   error={error()}
                   title={part().tool === "websearch" ? webSearchProviderLabel(partMetadata().provider) : undefined}
                   defaultOpen={props.defaultOpen}
+                  open={controlledOpen()}
+                  onOpenChange={props.onToolOpenChange ? handleToolOpenChange : undefined}
                   subtitle={taskSubtitle()}
                   href={taskHref()}
                 />
@@ -1417,7 +1435,10 @@ PART_MAPPING["tool"] = function ToolPartDisplay(props) {
               status={part().state.status}
               hideDetails={props.hideDetails}
               defaultOpen={props.defaultOpen}
+              open={controlledOpen()}
+              onOpenChange={props.onToolOpenChange ? handleToolOpenChange : undefined}
               deferContent={props.deferToolContent}
+              virtualizeDiff={props.virtualizeDiff}
             />
           </Match>
         </Switch>
@@ -1458,7 +1479,7 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
   const model = createMemo(() => {
     if (props.message.role !== "assistant") return ""
     const message = props.message as AssistantMessage
-    const match = data.store.provider?.all?.find((p) => p.id === message.providerID)
+    const match = data.store.provider?.all?.get(message.providerID)
     return match?.models?.[message.modelID]?.name ?? message.modelID
   })
 
@@ -1498,7 +1519,7 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
   const streaming = createMemo(
     () => props.message.role === "assistant" && typeof (props.message as AssistantMessage).time.completed !== "number",
   )
-  const text = () => (data.store.part_text_accum_delta?.[part().id] ?? part().text ?? "").trim()
+  const text = () => readPartText(data.store.part_text_accum_delta, part())
   const isLastTextPart = createMemo(() => {
     const parts = data.store.part?.[props.message.id] as PartType[] | undefined
     if (!parts) return false
@@ -1567,7 +1588,7 @@ PART_MAPPING["reasoning"] = function ReasoningPartDisplay(props) {
   const streaming = createMemo(
     () => props.message.role === "assistant" && typeof (props.message as AssistantMessage).time.completed !== "number",
   )
-  const text = () => (data.store.part_text_accum_delta?.[part().id] ?? part().text ?? "").trim()
+  const text = () => readPartText(data.store.part_text_accum_delta, part())
 
   return (
     <Show when={text()}>
@@ -1924,15 +1945,29 @@ ToolRegistry.register({
     const path = createMemo(() => props.metadata?.filediff?.file || props.input.filePath || "")
     const filename = () => getFilename(props.input.filePath ?? "")
     const pending = () => props.status === "pending" || props.status === "running"
+    const diffSource = createMemo(
+      () => {
+        const filediff = props.metadata?.filediff
+        if (!filediff) return
+        return {
+          file: filediff.file || props.input.filePath || "",
+          patch: typeof filediff.patch === "string" ? filediff.patch : undefined,
+          before: typeof filediff.before === "string" ? filediff.before : undefined,
+          after: typeof filediff.after === "string" ? filediff.after : undefined,
+        }
+      },
+      undefined,
+      {
+        equals: (a, b) =>
+          a?.file === b?.file && a?.patch === b?.patch && a?.before === b?.before && a?.after === b?.after,
+      },
+    )
 
     const fileCompProps = createMemo(() => {
       try {
-        if (props.metadata?.filediff) {
-          const diff = normalize({
-            ...props.metadata?.filediff,
-            status: "modified",
-          })
-          const fileDiff = diff.fileDiff
+        const source = diffSource()
+        if (source) {
+          const fileDiff = resolveFileDiff(source)
           if (fileDiff) return { fileDiff, hunkSeparators: fileDiff.isPartial ? "simple" : "line-info-basic" }
         }
       } catch {}
@@ -1990,7 +2025,7 @@ ToolRegistry.register({
               }
             >
               <div data-component="edit-content">
-                <Dynamic component={fileComponent} mode="diff" {...fileCompProps()} />
+                <Dynamic component={fileComponent} mode="diff" virtualize={props.virtualizeDiff} {...fileCompProps()} />
               </div>
             </ToolFileAccordion>
           </Show>
@@ -2174,6 +2209,7 @@ ToolRegistry.register({
                                 <Dynamic
                                   component={fileComponent}
                                   mode="diff"
+                                  virtualize={props.virtualizeDiff}
                                   fileDiff={file.view.fileDiff}
                                   hunkSeparators={file.view.fileDiff.isPartial ? "simple" : "line-info-basic"}
                                 />
@@ -2246,7 +2282,12 @@ ToolRegistry.register({
               }
             >
               <div data-component="apply-patch-file-diff">
-                <Dynamic component={fileComponent} mode="diff" fileDiff={single()!.view.fileDiff} />
+                <Dynamic
+                  component={fileComponent}
+                  mode="diff"
+                  virtualize={props.virtualizeDiff}
+                  fileDiff={single()!.view.fileDiff}
+                />
               </div>
             </ToolFileAccordion>
           </BasicTool>
