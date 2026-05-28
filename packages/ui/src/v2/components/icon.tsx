@@ -57,6 +57,10 @@ const icons = {
     viewBox: "0 0 16 16",
     body: `<path d="M2.5 7.5H3.5V8.5H2.5V7.5Z" stroke="currentColor"/><path d="M7.5 7.5H8.5V8.5H7.5V7.5Z" stroke="currentColor"/><path d="M12.5 7.5H13.5V8.5H12.5V7.5Z" stroke="currentColor"/>`,
   },
+  terminal: {
+    viewBox: "0 0 20 20",
+    body: `<path d="M3.5 5.5L8 10L3.5 14.5M9.5 14H16.5" stroke="currentColor" stroke-linecap="square" stroke-linejoin="round"/>`,
+  },
 }
 
 const spriteID = "opencode-v2-icon-sprite"

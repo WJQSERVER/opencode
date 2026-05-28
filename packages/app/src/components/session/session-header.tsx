@@ -241,6 +241,14 @@ export function SessionHeader() {
     reviewKeybind: command.keybind("review.toggle"),
     reviewOpened: view().reviewPanel.opened(),
     onReviewToggle: () => view().reviewPanel.toggle(),
+    fileTreeLabel: language.t("command.fileTree.toggle"),
+    fileTreeKeybind: command.keybind("fileTree.toggle"),
+    fileTreeOpened: layout.fileTree.opened(),
+    onFileTreeToggle: () => layout.fileTree.toggle(),
+    terminalLabel: language.t("command.terminal.toggle"),
+    terminalKeybind: command.keybind("terminal.toggle"),
+    terminalOpened: view().terminal.opened(),
+    onTerminalToggle: toggleTerminal,
   }))
 
   const selectApp = (app: OpenApp) => {
@@ -528,6 +536,14 @@ type SessionHeaderV2ActionsState = {
   reviewKeybind: string
   reviewOpened: boolean
   onReviewToggle: () => void
+  fileTreeLabel: string
+  fileTreeKeybind: string
+  fileTreeOpened: boolean
+  onFileTreeToggle: () => void
+  terminalLabel: string
+  terminalKeybind: string
+  terminalOpened: boolean
+  onTerminalToggle: () => void
 }
 
 function SessionHeaderV2Actions(props: { state: SessionHeaderV2ActionsState }) {
@@ -538,6 +554,34 @@ function SessionHeaderV2Actions(props: { state: SessionHeaderV2ActionsState }) {
           <StatusPopoverV2 />
         </Tooltip>
       </Show>
+      <TooltipKeybind title={props.state.terminalLabel} keybind={props.state.terminalKeybind}>
+        <IconButtonV2
+          type="button"
+          variant="ghost-muted"
+          size="large"
+          class="!w-9 shrink-0"
+          state={props.state.terminalOpened ? "pressed" : undefined}
+          onClick={props.state.onTerminalToggle}
+          aria-label={props.state.terminalLabel}
+          aria-expanded={props.state.terminalOpened}
+          aria-controls="terminal-panel"
+          icon={<IconV2 name="terminal" />}
+        />
+      </TooltipKeybind>
+      <TooltipKeybind title={props.state.fileTreeLabel} keybind={props.state.fileTreeKeybind}>
+        <IconButtonV2
+          type="button"
+          variant="ghost-muted"
+          size="large"
+          class="!w-9 shrink-0"
+          state={props.state.fileTreeOpened ? "pressed" : undefined}
+          onClick={props.state.onFileTreeToggle}
+          aria-label={props.state.fileTreeLabel}
+          aria-expanded={props.state.fileTreeOpened}
+          aria-controls="file-tree-panel"
+          icon={<IconV2 name="folder-add-left" />}
+        />
+      </TooltipKeybind>
       <TooltipKeybind title={props.state.reviewLabel} keybind={props.state.reviewKeybind}>
         <IconButtonV2
           type="button"
