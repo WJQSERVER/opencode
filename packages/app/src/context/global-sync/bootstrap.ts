@@ -9,7 +9,7 @@ import type {
   Session,
   Todo,
 } from "@opencode-ai/sdk/v2/client"
-import { showToast } from "@opencode-ai/ui/toast"
+import { showToast } from "@/utils/toast"
 import { getFilename } from "@opencode-ai/core/util/path"
 import { retry } from "@opencode-ai/core/util/retry"
 import { batch } from "solid-js"
@@ -204,6 +204,7 @@ export const loadPathQuery = (directory: string | null, sdk: OpencodeClient) =>
 
 export async function bootstrapDirectory(input: {
   directory: string
+  mcp: boolean
   sdk: OpencodeClient
   store: Store<State>
   setStore: SetStoreFunction<State>
@@ -256,7 +257,7 @@ export async function bootstrapDirectory(input: {
             if (next) input.vcsCache.setStore("value", next)
           }),
         ),
-      () => retry(() => input.sdk.command.list().then((x) => input.setStore("command", x.data ?? []))),
+      input.mcp && (() => retry(() => input.sdk.command.list().then((x) => input.setStore("command", x.data ?? [])))),
       () =>
         retry(() =>
           input.sdk.permission.list().then((x) => {
@@ -310,7 +311,7 @@ export async function bootstrapDirectory(input: {
           }),
         ),
       () => Promise.resolve(input.loadSessions(input.directory)),
-      () => input.queryClient.fetchQuery(loadMcpQuery(input.directory, input.sdk)),
+      input.mcp && (() => input.queryClient.fetchQuery(loadMcpQuery(input.directory, input.sdk))),
       () =>
         input.queryClient.fetchQuery(loadProvidersQuery(input.directory, input.sdk)).catch((err) => {
           const project = getFilename(input.directory)
