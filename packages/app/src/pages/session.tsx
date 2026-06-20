@@ -497,10 +497,10 @@ export default function Page() {
 
   createEffect(
     on(
-      () => [sdk.directory, params.id, serverSync.sseReconnectTick()] as const,
+      () => [sdk().directory, params.id, serverSync.sseReconnectTick()] as const,
       ([directory, id]) => {
         if (!id) return
-        void sync.session.sync(id, { force: true })
+        void sync().session.sync(id, { force: true })
       },
     ),
   )
