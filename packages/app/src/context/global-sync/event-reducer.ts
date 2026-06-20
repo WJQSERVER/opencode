@@ -76,7 +76,7 @@ export function cleanupDroppedSessionCaches(
     ...Object.keys(store.question),
     ...Object.keys(store.session_status),
     ...Object.values(store.part)
-      .flatMap((parts) => parts?.map((part) => part?.sessionID) ?? [])
+      .map((parts) => parts?.find((part) => !!part?.sessionID)?.sessionID)
       .filter((sessionID): sessionID is string => !!sessionID),
   ].filter((sessionID, index, list) => !keep.has(sessionID) && list.indexOf(sessionID) === index)
   if (stale.length === 0) return
@@ -99,8 +99,10 @@ export function applyDirectoryEvent(input: {
   loadLsp: () => void
   vcsCache?: VcsCache
   setSessionTodo?: (sessionID: string, todos: Todo[] | undefined) => void
+  retainedLimit?: number
 }) {
   const event = input.event
+  const limit = Math.max(input.store.limit, input.retainedLimit ?? 0)
   switch (event.type) {
     case "server.instance.disposed": {
       input.push(input.directory)
@@ -115,7 +117,7 @@ export function applyDirectoryEvent(input: {
       }
       const next = input.store.session.slice()
       next.splice(result.index, 0, info)
-      const trimmed = trimSessions(next, { limit: input.store.limit, permission: input.store.permission })
+      const trimmed = trimSessions(next, { limit, permission: input.store.permission })
       input.setStore("session", reconcile(trimmed, { key: "id" }))
       cleanupDroppedSessionCaches(input.store, input.setStore, trimmed, input.setSessionTodo)
       if (!info.parentID) input.setStore("sessionTotal", (value) => value + 1)
@@ -145,7 +147,7 @@ export function applyDirectoryEvent(input: {
       }
       const next = input.store.session.slice()
       next.splice(result.index, 0, info)
-      const trimmed = trimSessions(next, { limit: input.store.limit, permission: input.store.permission })
+      const trimmed = trimSessions(next, { limit, permission: input.store.permission })
       input.setStore("session", reconcile(trimmed, { key: "id" }))
       cleanupDroppedSessionCaches(input.store, input.setStore, trimmed, input.setSessionTodo)
       break
@@ -179,7 +181,7 @@ export function applyDirectoryEvent(input: {
     }
     case "session.status": {
       const props = event.properties as { sessionID: string; status: SessionStatus }
-      input.setStore("session_status", props.sessionID, props.status)
+      input.setStore("session_status", props.sessionID, reconcile(props.status))
       break
     }
     case "message.updated": {
@@ -191,9 +193,7 @@ export function applyDirectoryEvent(input: {
       }
       const result = Binary.search(messages, info.id, (m) => m.id)
       if (result.found) {
-        input.setStore("message", info.sessionID, produce((draft) => {
-          Object.assign(draft[result.index], info)
-        }))
+        input.setStore("message", info.sessionID, result.index, reconcile(info))
         break
       }
       input.setStore(
@@ -240,9 +240,7 @@ export function applyDirectoryEvent(input: {
       }
       const result = Binary.search(parts, part.id, (p) => p.id)
       if (result.found) {
-        input.setStore("part", part.messageID, produce((draft) => {
-          Object.assign(draft[result.index], part)
-        }))
+        input.setStore("part", part.messageID, result.index, reconcile(part))
         break
       }
       input.setStore(
@@ -263,25 +261,34 @@ export function applyDirectoryEvent(input: {
       )
       const parts = input.store.part[props.messageID]
       if (!parts) break
-      input.setStore(
-        produce((draft) => {
-          const list = draft.part[props.messageID]
-          if (!list) return
-          const next = Binary.search(list, props.partID, (p) => p.id)
-          if (!next.found) return
-          list.splice(next.index, 1)
-          if (list.length === 0) delete draft.part[props.messageID]
-        }),
-      )
+      const result = Binary.search(parts, props.partID, (p) => p.id)
+      if (result.found) {
+        input.setStore(
+          produce((draft) => {
+            const list = draft.part[props.messageID]
+            if (!list) return
+            const next = Binary.search(list, props.partID, (p) => p.id)
+            if (!next.found) return
+            list.splice(next.index, 1)
+            if (list.length === 0) delete draft.part[props.messageID]
+          }),
+        )
+      }
       break
     }
     case "message.part.delta": {
       const props = event.properties as { messageID: string; partID: string; field: string; delta: string }
-      input.setStore("part_text_accum_delta", props.partID, (existing) => (existing ?? "") + props.delta)
       const parts = input.store.part[props.messageID]
       if (!parts) break
       const result = Binary.search(parts, props.partID, (p) => p.id)
       if (!result.found) break
+      const field = props.field as keyof (typeof parts)[number]
+      const current = parts[result.index]?.[field]
+      input.setStore(
+        "part_text_accum_delta",
+        props.partID,
+        (existing) => (existing ?? (typeof current === "string" ? current : "")) + props.delta,
+      )
       input.setStore(
         "part",
         props.messageID,
