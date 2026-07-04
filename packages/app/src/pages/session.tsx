@@ -548,7 +548,6 @@ export default function Page() {
         setTimeout(() => owner.run(() => setStore("deferRender", false)), 0)
       })
     }
-    }
     return key
   })
 
