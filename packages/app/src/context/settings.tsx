@@ -116,7 +116,6 @@ const defaultSettings: Settings = {
     showReasoningSummaries: false,
     shellToolPartsExpanded: false,
     editToolPartsExpanded: false,
-    showSessionProgressBar: true,
     showCustomAgents: true,
     mobileTitlebarPosition: "top",
   },
