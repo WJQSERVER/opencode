@@ -821,7 +821,6 @@ export function AssistantParts(props: {
                 })
 
                 return (
-<<<<<<< HEAD:packages/ui/src/components/message-part.tsx
                   <Show when={message()}>
                     <Show when={item()}>
                       <Part
@@ -832,7 +831,7 @@ export function AssistantParts(props: {
                         useV2Actions={props.useV2Actions}
                         defaultOpen={partDefaultOpen(item()!, props.shellToolDefaultOpen, props.editToolDefaultOpen)}
                       />
-                    </Show>:packages/session-ui/src/components/message-part.tsx
+                    </Show>
                   </Show>
                 )
               })()}
