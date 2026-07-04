@@ -1,5 +1,5 @@
-import { marked } from "marked"
-import markedKatex from "marked-katex-extension"
+import { marked, type MarkedExtension, type Tokens } from "marked"
+import markedShiki from "marked-shiki"
 import katex from "katex"
 import { bundledLanguages, type BundledLanguage } from "shiki"
 import { createSimpleContext } from "./helper"
@@ -394,8 +394,8 @@ function renderMathInText(text: string): string {
     }
   })
 
-  // Inline math: $...$
-  const inlineMathRegex = /(?<!\$)\$(?!\$)((?:[^$\\]|\\.)+?)\$(?!\$)/g
+  // Inline math: \(...\)
+  const inlineMathRegex = /\\\(((?:\\.|[^\\\n])*?)\\\)/g
   result = result.replace(inlineMathRegex, (_, math) => {
     try {
       return katex.renderToString(math, {
@@ -403,11 +403,61 @@ function renderMathInText(text: string): string {
         throwOnError: false,
       })
     } catch {
-      return `$${math}$`
+      return `\\(${math}\\)`
     }
   })
 
   return result
+}
+
+const inlineMathRegex = /^\\\(((?:\\.|[^\\\n])*?)\\\)/
+const blockMathRegex = /^\$\$\n([\s\S]+?)\n\$\$(?:\n|$)/
+
+const katexExtension: MarkedExtension = {
+  extensions: [
+    {
+      name: "inlineKatex",
+      level: "inline",
+      start(src) {
+        const index = src.indexOf("\\(")
+        if (index === -1) return
+        return index
+      },
+      tokenizer(src) {
+        const match = src.match(inlineMathRegex)
+        if (!match) return
+        return {
+          type: "inlineKatex",
+          raw: match[0],
+          text: match[1].trim(),
+          displayMode: false,
+        }
+      },
+      renderer: renderKatexToken,
+    },
+    {
+      name: "blockKatex",
+      level: "block",
+      tokenizer(src) {
+        const match = src.match(blockMathRegex)
+        if (!match) return
+        return {
+          type: "blockKatex",
+          raw: match[0],
+          text: match[1].trim(),
+          displayMode: true,
+        }
+      },
+      renderer: renderKatexToken,
+    },
+  ],
+}
+
+function renderKatexToken(token: Tokens.Generic) {
+  return katex.renderToString(typeof token.text === "string" ? token.text : "", {
+    displayMode: token.displayMode === true,
+    throwOnError: false,
+  })
 }
 
 function renderMathExpressions(html: string): string {
@@ -436,15 +486,6 @@ async function highlightCodeBlocks(html: string): Promise<string> {
     preferredHighlighter: "shiki-wasm",
   })
 
-  const langs = new Set<string>()
-  for (const match of matches) {
-    const lang = match[1] || "text"
-    if (lang in bundledLanguages && !highlighter.getLoadedLanguages().includes(lang)) {
-      langs.add(lang)
-    }
-  }
-  await Promise.all([...langs].map((l) => highlighter.loadLanguage(l as BundledLanguage)))
-
   let result = html
   for (const match of matches) {
     const [fullMatch, lang, escapedCode] = match
@@ -455,7 +496,13 @@ async function highlightCodeBlocks(html: string): Promise<string> {
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
 
-    const language = lang && lang in bundledLanguages ? lang : "text"
+    let language = lang || "text"
+    if (!(language in bundledLanguages)) {
+      language = "text"
+    }
+    if (!highlighter.getLoadedLanguages().includes(language)) {
+      await highlighter.loadLanguage(language as BundledLanguage)
+    }
 
     const highlighted = highlighter.codeToHtml(code, {
       lang: language,
@@ -482,9 +529,26 @@ export const { use: useMarked, provider: MarkedProvider } = createSimpleContext(
           },
         },
       },
-      markedKatex({
-        throwOnError: false,
-        nonStandard: true,
+      katexExtension,
+      markedShiki({
+        async highlight(code, lang) {
+          const highlighter = await getSharedHighlighter({
+            themes: ["OpenCode"],
+            langs: [],
+            preferredHighlighter: "shiki-wasm",
+          })
+          if (!(lang in bundledLanguages)) {
+            lang = "text"
+          }
+          if (!highlighter.getLoadedLanguages().includes(lang)) {
+            await highlighter.loadLanguage(lang as BundledLanguage)
+          }
+          return highlighter.codeToHtml(code, {
+            lang: lang || "text",
+            theme: "OpenCode",
+            tabindex: false,
+          })
+        },
       }),
     )
 
@@ -499,11 +563,6 @@ export const { use: useMarked, provider: MarkedProvider } = createSimpleContext(
       }
     }
 
-    return {
-      async parse(markdown: string): Promise<string> {
-        const html = jsParser.parse(markdown) as string
-        return highlightCodeBlocks(html)
-      },
-    }
+    return jsParser
   },
 })
