@@ -32,6 +32,7 @@ export function TabNavItem(props: {
   dragging?: boolean
   pressed?: boolean
   hidden?: boolean
+  compact?: boolean
 }) {
   const [editing, setEditing] = createSignal(false)
   const [titleOverflowing, setTitleOverflowing] = createSignal(false)
@@ -181,8 +182,12 @@ export function TabNavItem(props: {
       data-slot="titlebar-tab-item"
       data-title-overflow={titleOverflowing()}
       data-editing={editing()}
-      class="group relative flex h-7 w-full min-w-0 select-none flex-row items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[6px] px-1.5 [container-type:inline-size]"
-      classList={{ invisible: props.hidden }}
+      class="group relative flex w-full min-w-0 select-none flex-row items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[6px] px-1.5 [container-type:inline-size]"
+      classList={{
+        invisible: props.hidden,
+        "h-7": !props.compact,
+        "h-8": props.compact,
+      }}
       data-active={props.active}
       data-dragging={props.dragging}
       data-state={props.active || props.pressed ? "pressed" : undefined}
@@ -323,6 +328,7 @@ export function DraftTabItem(props: {
   dragging?: boolean
   pressed?: boolean
   hidden?: boolean
+  compact?: boolean
 }) {
   const language = useLanguage()
   const closeTab = (event: MouseEvent) => {
@@ -338,8 +344,12 @@ export function DraftTabItem(props: {
       data-active={props.active}
       data-dragging={props.dragging}
       data-state={props.active || props.pressed ? "pressed" : undefined}
-      class="group relative flex h-7 w-full min-w-0 flex-row items-center gap-1.5 overflow-hidden rounded-[6px] px-1.5 [container-type:inline-size] whitespace-nowrap"
-      classList={{ invisible: props.hidden }}
+      class="group relative flex w-full min-w-0 flex-row items-center gap-1.5 overflow-hidden rounded-[6px] px-1.5 [container-type:inline-size] whitespace-nowrap"
+      classList={{
+        invisible: props.hidden,
+        "h-7": !props.compact,
+        "h-8": props.compact,
+      }}
       onMouseDown={(event) => {
         if (event.button !== MIDDLE_MOUSE_BUTTON) return
         event.preventDefault()

@@ -35,6 +35,7 @@ export interface Settings {
     showCustomAgents: boolean
     mobileTitlebarPosition: "top" | "bottom"
     newLayoutDesigns?: boolean
+    verticalTabs?: boolean
     layoutTransitionEligible?: boolean
     agentVisibilityInitialized?: boolean
     newInterfaceNoticeDismissed?: boolean
@@ -195,6 +196,7 @@ const defaultSettings: Settings = {
     editToolPartsExpanded: false,
     showCustomAgents: true,
     mobileTitlebarPosition: "top",
+    verticalTabs: false,
   },
   appearance: {
     fontSize: 14,
@@ -434,6 +436,10 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
           if (newLayoutDesigns() === next) return
           setStore("general", "newLayoutDesigns", next)
           if (typeof window !== "undefined") setTimeout(() => window.location.reload())
+        },
+        verticalTabs: withFallback(() => store.general?.verticalTabs, defaultSettings.general.verticalTabs),
+        setVerticalTabs(value: boolean) {
+          setStore("general", "verticalTabs", value)
         },
         layoutTransitionClassified,
         setOldLayoutEligible(eligible: boolean) {

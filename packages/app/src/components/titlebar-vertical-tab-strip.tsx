@@ -1,10 +1,9 @@
-import { createEffect, createMemo, onCleanup, onMount, For, Show } from "solid-js"
+import { createEffect, createMemo, For, onMount } from "solid-js"
 import { createStore } from "solid-js/store"
-import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { DragDropProvider, PointerSensor } from "@dnd-kit/solid"
 import { isSortable } from "@dnd-kit/solid/sortable"
 import { Accessibility, AutoScroller, Feedback, PointerActivationConstraints } from "@dnd-kit/dom"
-import { RestrictToHorizontalAxis } from "@dnd-kit/abstract/modifiers"
+import { RestrictToVerticalAxis } from "@dnd-kit/abstract/modifiers"
 import { RestrictToElement } from "@dnd-kit/dom/modifiers"
 import { arrayMove } from "@dnd-kit/helpers"
 import { tabKey, type Tab } from "@/context/tabs"
@@ -12,91 +11,46 @@ import { ServerConnection } from "@/context/server"
 import { SessionTabEntry, DraftTabSlot, useTabShortcut } from "@/components/titlebar-tab-entry"
 import { useGlobal } from "@/context/global"
 import { useLanguage } from "@/context/language"
-import { useCommand } from "@/context/command"
-import { useTabs } from "@/context/tabs"
 import { canStartTabDrag, isTabCloseTarget } from "./titlebar-tab-gesture"
-import { adjacentTabKey, mergeVisibleTabOrder } from "./titlebar-tab-order"
+import { mergeVisibleTabOrder } from "./titlebar-tab-order"
 
-export function TitlebarTabStrip(props: {
+export function TitlebarVerticalTabStrip(props: {
   tabs: Tab[]
   currentTab: () => Tab | undefined
-  forceTruncate: boolean
   onNavigate: (tab: Tab, el?: HTMLDivElement) => void
   onClose: (tab: Tab) => void
   onReorder: (keys: string[]) => void
-  onOverflowChange: (overflowing: boolean) => void
 }) {
   const global = useGlobal()
   const language = useLanguage()
-  const command = useCommand()
   let scrollRef!: HTMLDivElement
   let listRef!: HTMLDivElement
-  let resizeFrame: number | undefined
   const [visibility, setVisibility] = createStore<Record<string, boolean>>({})
   const visibleTabs = createMemo(() => props.tabs.filter((tab) => tab.type === "draft" || visibility[tabKey(tab)]))
   const visibleTabIds = () => visibleTabs().map(tabKey)
 
-  command.register("titlebar-tab-cycle", () => [
-    {
-      id: `tab.prev`,
-      category: "tab",
-      title: "",
-      keybind: `mod+option+ArrowLeft,ctrl+shift+tab`,
-      hidden: true,
-      onSelect: () => selectAdjacentTab(-1),
-    },
-    {
-      id: `tab.next`,
-      category: "tab",
-      title: "",
-      keybind: `mod+option+ArrowRight,ctrl+tab`,
-      hidden: true,
-      onSelect: () => selectAdjacentTab(1),
-    },
-  ])
-
-  function selectAdjacentTab(offset: -1 | 1) {
-    const current = props.currentTab()
-    const key = adjacentTabKey(visibleTabIds(), current ? tabKey(current) : undefined, offset)
-    const next = props.tabs.find((tab) => tabKey(tab) === key)
-    if (next) props.onNavigate(next)
+  const scrollActiveIntoView = () => {
+    const active = props.currentTab()
+    if (!active) return
+    scrollRef
+      ?.querySelector<HTMLElement>(`[data-tab-key="${tabKey(active)}"]`)
+      ?.scrollIntoView({ block: "nearest" })
   }
-
-  function refreshOverflow() {
-    if (!scrollRef) return
-    props.onOverflowChange(scrollRef.scrollWidth > scrollRef.clientWidth)
-  }
-
-  createResizeObserver(
-    () => [scrollRef, listRef],
-    () => {
-      if (resizeFrame !== undefined) return
-      resizeFrame = requestAnimationFrame(() => {
-        resizeFrame = undefined
-        refreshOverflow()
-      })
-    },
-  )
 
   onMount(() => {
-    refreshOverflow()
-  })
-
-  onCleanup(() => {
-    if (resizeFrame !== undefined) cancelAnimationFrame(resizeFrame)
+    scrollActiveIntoView()
   })
 
   createEffect(() => {
-    props.tabs.length
-    visibleTabIds()
-    refreshOverflow()
+    props.currentTab()
+    scrollActiveIntoView()
   })
 
   return (
-    <div data-slot="titlebar-tabs" class="relative min-w-0">
+    <div data-slot="titlebar-tabs-vertical" class="relative min-h-0 h-full shrink-0">
       <div
-        data-slot="titlebar-tabs-scroll"
-        class="flex min-w-0 flex-row items-center gap-1.5 overflow-x-auto no-scrollbar [app-region:no-drag]"
+        data-slot="titlebar-tabs-vertical-scroll"
+        class="flex h-full min-h-0 w-56 flex-col items-stretch gap-0.5 overflow-y-auto no-scrollbar py-2"
         ref={scrollRef}
       >
         <DragDropProvider
@@ -109,10 +63,10 @@ export function TitlebarTabStrip(props: {
                 (event.target instanceof Element && !!event.target.closest('[contenteditable="true"]')),
             }),
           ]}
-          modifiers={[RestrictToHorizontalAxis, RestrictToElement.configure({ element: () => listRef })]}
+          modifiers={[RestrictToVerticalAxis, RestrictToElement.configure({ element: () => listRef })]}
           plugins={(defaults) => [
             ...defaults.filter((plugin) => plugin !== Accessibility),
-            AutoScroller.configure({ acceleration: 8, threshold: { x: 0.05, y: 0 } }),
+            AutoScroller.configure({ acceleration: 8, threshold: { x: 0, y: 0.05 } }),
             Feedback.configure({ dropAnimation: null }),
           ]}
           onDragStart={(event) => {
@@ -140,7 +94,7 @@ export function TitlebarTabStrip(props: {
             }
           }}
         >
-          <div data-titlebar-tab-list class="flex w-full min-w-0 flex-row items-center" ref={listRef}>
+          <div data-titlebar-tab-list class="flex w-full flex-col items-stretch" ref={listRef}>
             <For each={props.tabs}>
               {(tab) => {
                 const id = tabKey(tab)
@@ -160,7 +114,7 @@ export function TitlebarTabStrip(props: {
                       id={id}
                       index={visibleIndex}
                       active={() => props.currentTab() === tab}
-                      forceTruncate={props.forceTruncate}
+                      forceTruncate={false}
                       serverCtx={serverCtx}
                       onVisibleChange={(visible) => setVisibility(id, visible)}
                       onNavigate={(element) => {
@@ -168,6 +122,7 @@ export function TitlebarTabStrip(props: {
                         props.onNavigate(tab, element)
                       }}
                       onClose={() => props.onClose(tab)}
+                      compact
                     />
                   )
                 }
@@ -184,6 +139,7 @@ export function TitlebarTabStrip(props: {
                       props.onNavigate(tab, element)
                     }}
                     onClose={() => props.onClose(tab)}
+                    compact
                   />
                 )
               }}
@@ -191,16 +147,6 @@ export function TitlebarTabStrip(props: {
           </div>
         </DragDropProvider>
       </div>
-      <div
-        data-slot="titlebar-tabs-fade-left"
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-[linear-gradient(to_right,var(--v2-background-bg-deep),transparent)]"
-      />
-      <div
-        data-slot="titlebar-tabs-fade-right"
-        aria-hidden="true"
-        class="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-[linear-gradient(to_left,var(--v2-background-bg-deep),transparent)]"
-      />
     </div>
   )
 }

@@ -74,6 +74,8 @@ import { MessageTimeline } from "@/pages/session/timeline/message-timeline"
 import { createTimelineModel } from "@/pages/session/timeline/model"
 import { type DiffStyle, SessionReviewTab, type SessionReviewTabProps } from "@/pages/session/review-tab"
 import { useSessionLayout } from "@/pages/session/session-layout"
+import { TitlebarVerticalTabStrip } from "@/components/titlebar-vertical-tab-strip"
+import { tabKey } from "@/context/tabs"
 import { restorePromptModel, syncPromptModel, syncSessionModel } from "@/pages/session/session-model-helpers"
 import {
   clampSessionPanelWidth,
@@ -366,6 +368,7 @@ export default function Page() {
   const comments = useComments()
   const command = useCommand()
   const terminal = useTerminal()
+  const tabsCtx = useTabs()
   const [searchParams, setSearchParams] = useSearchParams<{ prompt?: string }>()
   const location = useLocation()
   const navigate = useNavigate()
@@ -374,6 +377,19 @@ export default function Page() {
   const reviewFile = () => view().review.file()
   const sessionOwnership = createSessionOwnership(sessionKey)
   const newSessionDesign = createMemo(() => settings.general.newLayoutDesigns())
+  const verticalTabs = createMemo(() => settings.general.verticalTabs())
+  const currentTab = createMemo(() => {
+    const route = layout.route()
+    if (route.type === "home") return
+    if (route.type === "draft") {
+      return tabsCtx.store.find((item) => item.type === "draft" && item.draftID === route.draftID)
+    }
+    if (route.type === "session") {
+      return tabsCtx.store.find(
+        (item) => item.type === "session" && item.server === route.server && item.sessionId === route.sessionId,
+      )
+    }
+  })
 
   createEffect(() => {
     if (!prompt.ready()) return
@@ -2263,6 +2279,22 @@ export default function Page() {
         }}
       >
         <Show when={!isDesktop() && !!params.id && !settings.general.newLayoutDesigns()}>{mobileTabs()}</Show>
+
+        <Show when={verticalTabs() && isDesktop()}>
+          <TitlebarVerticalTabStrip
+            tabs={tabsCtx.store}
+            currentTab={currentTab}
+            onNavigate={(tab, el) => {
+              tabsCtx.select(tab)
+              el?.scrollIntoView({ behavior: "instant" })
+            }}
+            onClose={(tab) => {
+              const index = tabsCtx.store.findIndex((item) => tabKey(item) === tabKey(tab))
+              if (index !== -1) tabsCtx.closeTab(index)
+            }}
+            onReorder={(keys) => tabsCtx.reorder(keys)}
+          />
+        </Show>
 
         <div
           classList={{
