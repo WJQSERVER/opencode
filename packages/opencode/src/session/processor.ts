@@ -661,6 +661,7 @@ const layer = Layer.effect(
               SessionRetry.policy({
                 provider: input.model.providerID,
                 parse,
+                infinite: (yield* config.get()).experimental?.infinite_retry === true,
                 set: (info) => {
                   return status.set(ctx.sessionID, {
                     type: "retry",

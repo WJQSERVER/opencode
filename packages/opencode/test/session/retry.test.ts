@@ -36,7 +36,7 @@ describe("session.retry.delay", () => {
   test("caps delay at 30 seconds when headers missing", () => {
     const error = apiError()
     const delays = Array.from({ length: 10 }, (_, index) => SessionRetry.delay(index + 1, error, 0))
-    expect(delays).toStrictEqual([2000, 4000, 8000, 16000, 30000, 30000, 30000, 30000, 30000, 30000])
+    expect(delays).toStrictEqual([2000, 4000, 8000, 16000, 30000, 28500, 28500, 28500, 28500, 28500])
   })
 
   test("adds jitter to exponential delays", () => {
@@ -45,6 +45,14 @@ describe("session.retry.delay", () => {
     expect(SessionRetry.delay(1, error, 1)).toBe(2500)
     expect(SessionRetry.delay(4, error, 1)).toBe(20000)
     expect(SessionRetry.delay(5, error, 1)).toBe(30000)
+  })
+
+  test("settles at a steady 30s interval with symmetric jitter after the backoff window", () => {
+    const error = apiError()
+    expect(SessionRetry.delay(6, error, 0)).toBe(28500)
+    expect(SessionRetry.delay(6, error, 0.5)).toBe(30000)
+    expect(SessionRetry.delay(6, error, 1)).toBe(31500)
+    expect(SessionRetry.delay(20, error, 1)).toBe(31500)
   })
 
   test("prefers retry-after-ms when shorter than exponential", () => {
@@ -144,6 +152,30 @@ describe("session.retry.delay", () => {
       )
 
       expect(attempts).toStrictEqual([1, 2, 3, 4, 5])
+    }),
+  )
+
+  it.instance("policy retries indefinitely when infinite is enabled", () =>
+    Effect.gen(function* () {
+      const attempts: number[] = []
+      const error = apiError({ "retry-after-ms": "0" })
+      const step = yield* Schedule.toStepWithMetadata(
+        SessionRetry.policy({
+          provider: "test",
+          parse: Schema.decodeUnknownSync(SessionV1.APIError.Schema),
+          infinite: true,
+          set: (info) =>
+            Effect.sync(() => {
+              attempts.push(info.attempt)
+            }),
+        }),
+      )
+
+      yield* Effect.forEach(Array.from({ length: SessionRetry.RETRY_MAX_RETRIES + 3 }), () =>
+        Effect.ignore(step(error)),
+      )
+
+      expect(attempts).toStrictEqual([1, 2, 3, 4, 5, 6, 7, 8])
     }),
   )
 })

@@ -9,6 +9,8 @@ import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import { useUpdaterAction } from "../updater-action"
 import { useSettings } from "@/context/settings"
+import { useServerSync } from "@/context/server-sync"
+import { useSync } from "@/context/sync"
 import { ExternalLink } from "../external-link"
 import { SettingsListV2 } from "./parts/list"
 import { SettingsRowV2 } from "./parts/row"
@@ -278,6 +280,8 @@ export const SettingsGeneralV2: Component<{
   const platform = usePlatform()
   const dialog = useDialog()
   const settings = useSettings()
+  const sync = useSync()
+  const serverSync = useServerSync()
   const mobile = createMediaQuery("(max-width: 767px)")
   const updater = useUpdaterAction()
   const permissionScope = createPermissionScopeController(() => props.sessionID)
@@ -377,6 +381,18 @@ export const SettingsGeneralV2: Component<{
             <Switch
               checked={settings.general.verticalTabs()}
               onChange={(checked) => settings.general.setVerticalTabs(checked)}
+            />
+          </div>
+        </SettingsRowV2>
+
+        <SettingsRowV2
+          title={language.t("settings.general.row.infiniteRetry.title")}
+          description={language.t("settings.general.row.infiniteRetry.description")}
+        >
+          <div data-action="settings-infinite-retry">
+            <Switch
+              checked={sync().data.config.experimental?.infinite_retry ?? false}
+              onChange={(checked) => void serverSync().updateConfig({ experimental: { infinite_retry: checked } })}
             />
           </div>
         </SettingsRowV2>

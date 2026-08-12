@@ -13,6 +13,7 @@ import { useLanguage } from "@/context/language"
 import { usePermission } from "@/context/permission"
 import { usePlatform, type DisplayBackend } from "@/context/platform"
 import { useServerSync } from "@/context/server-sync"
+import { useSync } from "@/context/sync"
 import { useServerSDK } from "@/context/server-sdk"
 import { useUpdaterAction } from "./updater-action"
 import {
@@ -124,6 +125,7 @@ export const SettingsGeneral: Component = () => {
   const themeOptions = createMemo<ThemeOption[]>(() => theme.ids().map((id) => ({ id, name: theme.name(id) })))
 
   const serverSync = useServerSync()
+  const sync = useSync()
   const serverSdk = useServerSDK()
 
   const [shells] = createResource(
@@ -391,6 +393,18 @@ export const SettingsGeneral: Component = () => {
             <Switch
               checked={settings.general.verticalTabs()}
               onChange={(checked) => settings.general.setVerticalTabs(checked)}
+            />
+          </div>
+        </SettingsRow>
+
+        <SettingsRow
+          title={language.t("settings.general.row.infiniteRetry.title")}
+          description={language.t("settings.general.row.infiniteRetry.description")}
+        >
+          <div data-action="settings-infinite-retry">
+            <Switch
+              checked={sync().data.config.experimental?.infinite_retry ?? false}
+              onChange={(checked) => void serverSync().updateConfig({ experimental: { infinite_retry: checked } })}
             />
           </div>
         </SettingsRow>

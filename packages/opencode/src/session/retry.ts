@@ -26,6 +26,7 @@ export type Retryable = {
 export const RETRY_INITIAL_DELAY = 2000
 export const RETRY_BACKOFF_FACTOR = 2
 export const RETRY_JITTER_FACTOR = 0.25
+export const RETRY_STEADY_JITTER_FACTOR = 0.05
 export const RETRY_MAX_DELAY_NO_HEADERS = 30_000 // 30 seconds
 export const RETRY_MAX_DELAY = 2_147_483_647 // max 32-bit signed integer for setTimeout
 export const RETRY_MAX_RETRIES = 5
@@ -69,16 +70,28 @@ export function delay(attempt: number, error?: SessionV1.APIError, random = Math
         }
       }
 
-      return cap(exponential(attempt, random))
+      return cap(interval(attempt, random))
     }
   }
 
-  return cap(Math.min(exponential(attempt, random), RETRY_MAX_DELAY_NO_HEADERS))
+  return attempt > RETRY_MAX_RETRIES
+    ? cap(interval(attempt, random))
+    : cap(Math.min(interval(attempt, random), RETRY_MAX_DELAY_NO_HEADERS))
 }
 
 function exponential(attempt: number, random: number) {
   const base = RETRY_INITIAL_DELAY * Math.pow(RETRY_BACKOFF_FACTOR, attempt - 1)
   return Math.ceil(base + base * RETRY_JITTER_FACTOR * random)
+}
+
+// After the capped backoff window, retries settle at a steady 30s interval
+// with a small symmetric jitter instead of growing without bound.
+function interval(attempt: number, random: number) {
+  if (attempt > RETRY_MAX_RETRIES) {
+    const base = RETRY_MAX_DELAY_NO_HEADERS
+    return Math.ceil(base * (1 + RETRY_STEADY_JITTER_FACTOR * (random * 2 - 1)))
+  }
+  return exponential(attempt, random)
 }
 
 export function retryable(error: Err, provider: string) {
@@ -182,6 +195,7 @@ function parseJSON(value: unknown) {
 export function policy(opts: {
   provider: string
   parse: (error: unknown) => Err
+  infinite?: boolean
   set: (input: { attempt: number; message: string; action?: Retryable["action"]; next: number }) => Effect.Effect<void>
 }) {
   return Schedule.fromStepWithMetadata(
@@ -189,7 +203,7 @@ export function policy(opts: {
       const error = opts.parse(meta.input)
       const retry = retryable(error, opts.provider)
       if (!retry) return Cause.done(meta.attempt)
-      if (meta.attempt > RETRY_MAX_RETRIES) return Cause.done(meta.attempt)
+      if (meta.attempt > RETRY_MAX_RETRIES && !opts.infinite) return Cause.done(meta.attempt)
       return Effect.gen(function* () {
         const wait = delay(meta.attempt, SessionV1.APIError.isInstance(error) ? error : undefined)
         const now = yield* Clock.currentTimeMillis
