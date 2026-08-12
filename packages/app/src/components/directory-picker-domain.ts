@@ -322,7 +322,8 @@ export function displayPickerPath(path: string, input: string, home: string) {
 }
 
 export function createDirectorySearch(args: { sdk: ServerSDK; base: () => string | undefined; home: () => string }) {
-  const cache = new Map<string, Promise<Array<{ name: string; absolute: string }>>>()
+  const cache = new Map<string, { promise: Promise<Array<{ name: string; absolute: string }>>; expires: number }>()
+  const CACHE_TTL_MS = 30_000
   let current = 0
 
   const scoped = (value: string) => {
@@ -340,8 +341,9 @@ export function createDirectorySearch(args: { sdk: ServerSDK; base: () => string
 
   const directories = async (directory: string) => {
     const key = trimPickerPath(directory)
+    const now = Date.now()
     const existing = cache.get(key)
-    if (existing) return existing
+    if (existing && existing.expires > now) return existing.promise
     const request = args.sdk.api.file
       .list({ location: { directory: key } })
       .then((result) => result.data)
@@ -354,7 +356,7 @@ export function createDirectorySearch(args: { sdk: ServerSDK; base: () => string
             return { name: getFilename(relative), absolute: joinPickerPath(key, relative) }
           }),
       )
-    cache.set(key, request)
+    cache.set(key, { promise: request, expires: now + CACHE_TTL_MS })
     return request
   }
 
@@ -398,7 +400,7 @@ export function createDirectorySearch(args: { sdk: ServerSDK; base: () => string
         paths = paths.map(pickerParent)
         continue
       }
-      paths = Array.from(new Set((await Promise.all(paths.map((path) => match(path, part, 4)))).flat())).slice(0, 12)
+      paths = Array.from(new Set((await Promise.all(paths.map((path) => match(path, part, 8)))).flat())).slice(0, 24)
       if (!active() || paths.length === 0) return []
     }
     const matches = Array.from(new Set((await Promise.all(paths.map((path) => match(path, tail, 50)))).flat()))

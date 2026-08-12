@@ -2,11 +2,12 @@ export * as FileSystemSearch from "./search"
 
 import { makeLocationNode } from "../effect/app-node"
 import path from "path"
-import { Context, Effect, Layer, Scope } from "effect"
+import { Cause, Context, Effect, Layer, Schedule } from "effect"
 import { Fff } from "#fff"
 import fuzzysort from "fuzzysort"
 import { FileSystem } from "../filesystem"
 import { FSUtil } from "../fs-util"
+import { IGNORED_GLOBS } from "./ignore"
 import { Location } from "../location"
 import { Ripgrep } from "../ripgrep"
 import { RelativePath } from "../schema"
@@ -26,26 +27,47 @@ export const ripgrepLayer = Layer.effect(
     const fs = yield* FSUtil.Service
     const location = yield* Location.Service
     const ripgrep = yield* Ripgrep.Service
-    const scope = yield* Scope.Scope
     const state = {
       files: [] as string[],
       directories: [] as string[],
     }
-    const directories = new Set<string>()
-    yield* ripgrep
-      .find({
-        cwd: location.directory,
-        pattern: "*",
-        limit: location.vcs ? Number.MAX_SAFE_INTEGER : 100_000,
-        onEntry: (entry) =>
-          Effect.sync(() => {
-            state.files.push(entry.path)
-            const parts = entry.path.split("/")
-            parts.slice(0, -1).forEach((_, index) => directories.add(parts.slice(0, index + 1).join("/") + path.sep))
-            state.directories = Array.from(directories)
-          }),
-      })
-      .pipe(Effect.orDie, Effect.asVoid, Effect.forkIn(scope))
+    const REFRESH_INTERVAL = "1 minutes"
+    const MAX_ENTRIES = 500_000
+
+    const scan = Effect.gen(function* () {
+      const next = { files: [] as string[], directories: [] as string[] }
+      const seen = new Set<string>()
+      yield* ripgrep
+        .find({
+          cwd: location.directory,
+          pattern: "*",
+          limit: MAX_ENTRIES,
+          ...(location.vcs ? {} : { exclude: IGNORED_GLOBS }),
+          onEntry: (entry) =>
+            Effect.sync(() => {
+              next.files.push(entry.path)
+              const parts = entry.path.split("/")
+              for (let index = 0; index < parts.length - 1; index++) {
+                const directory = parts.slice(0, index + 1).join("/") + path.sep
+                if (seen.has(directory)) continue
+                seen.add(directory)
+                next.directories.push(directory)
+              }
+            }),
+        })
+        .pipe(Effect.orDie)
+      state.files = next.files
+      state.directories = next.directories
+    })
+
+    yield* Effect.forkScoped(
+      Effect.repeat(scan, Schedule.spaced(REFRESH_INTERVAL)).pipe(
+        Effect.catchCause((cause) =>
+          Effect.logError("failed to refresh file search index", { cause: Cause.pretty(cause) }),
+        ),
+      ),
+    )
+
     return Service.of({
       glob: (input) =>
         Effect.gen(function* () {

@@ -88,7 +88,13 @@ export function DialogSelectDirectoryV2(props: DialogSelectDirectoryV2Props) {
       fallbackPath()?.directory,
   )
   const search = createDirectorySearch({ sdk, home, base: () => root() || start() })
-  const [suggestions] = createResource(input, async (value) => {
+  const [debouncedInput, setDebouncedInput] = createSignal("")
+  createEffect(() => {
+    const value = input()
+    const timer = setTimeout(() => setDebouncedInput(value), 150)
+    onCleanup(() => clearTimeout(timer))
+  })
+  const [suggestions] = createResource(debouncedInput, async (value) => {
     const cleaned = cleanPickerInput(value)
     const typed = cleaned.replace(/\/+$/, "")
     const current = displayPickerPath(root(), value, home()).replace(/\/+$/, "")

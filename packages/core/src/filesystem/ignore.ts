@@ -31,6 +31,8 @@ const FOLDERS = new Set([
   ".gradle",
 ])
 
+export const IGNORED_GLOBS = Array.from(FOLDERS, (folder) => `**/${folder}/**`)
+
 const FILES = [
   "**/*.swp",
   "**/*.swo",
