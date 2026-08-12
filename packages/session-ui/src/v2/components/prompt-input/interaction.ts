@@ -34,6 +34,11 @@ export type PromptInputV2ViewConfig = {
   agent?: PromptInputV2SelectControl
   model?: PromptInputV2SelectControl
   variant?: PromptInputV2SelectControl
+  autoAccept?: {
+    accepting: Accessor<boolean>
+    toggle: () => void
+    disabled?: Accessor<boolean>
+  }
   submit: {
     stopping: Accessor<boolean>
     working?: Accessor<boolean>

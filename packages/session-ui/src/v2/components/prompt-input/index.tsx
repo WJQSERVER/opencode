@@ -254,6 +254,32 @@ export function PromptInputV2(props: PromptInputV2Props) {
                 </Show>
               )}
             </Show>
+            <Show when={view.autoAccept} keyed>
+              {(autoAccept) => (
+                <Show when={!autoAccept.disabled?.()}>
+                  <TooltipV2
+                    placement="top"
+                    value={
+                      autoAccept.accepting()
+                        ? i18n.t("ui.promptInput.autoAccept.on")
+                        : i18n.t("ui.promptInput.autoAccept")
+                    }
+                  >
+                    <IconButtonV2
+                      type="button"
+                      variant="ghost-muted"
+                      size="small"
+                      class="shrink-0"
+                      aria-label={i18n.t("ui.promptInput.autoAccept")}
+                      aria-pressed={autoAccept.accepting()}
+                      state={autoAccept.accepting() ? "pressed" : undefined}
+                      icon={<IconV2 name="shield" />}
+                      onClick={autoAccept.toggle}
+                    />
+                  </TooltipV2>
+                </Show>
+              )}
+            </Show>
           </div>
           <PromptInputV2SubmitButton
             mode={state.mode}
