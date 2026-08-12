@@ -958,6 +958,9 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "You're now using new layout",
   "settings.general.row.newInterfaceNotice.description": "The previous layout is no longer available",
   "settings.general.row.newInterfaceNotice.dismiss": "Dismiss",
+  "settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
   "settings.general.row.pinchZoom.title": "Pinch to zoom",
   "settings.general.row.pinchZoom.description": "Allow trackpad pinch and Ctrl-scroll gestures to zoom",
 

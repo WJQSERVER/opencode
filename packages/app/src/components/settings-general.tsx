@@ -382,6 +382,18 @@ export const SettingsGeneral: Component = () => {
             />
           </div>
         </SettingsRow>
+
+        <SettingsRow
+          title={language.t("settings.general.row.verticalTabs.title")}
+          description={language.t("settings.general.row.verticalTabs.description")}
+        >
+          <div data-action="settings-vertical-tabs">
+            <Switch
+              checked={settings.general.verticalTabs()}
+              onChange={(checked) => settings.general.setVerticalTabs(checked)}
+            />
+          </div>
+        </SettingsRow>
       </SettingsList>
     </div>
   )
