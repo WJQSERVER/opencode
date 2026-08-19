@@ -45,11 +45,18 @@ jobs:
             turbo-${{ runner.os }}-${{ hashFiles('turbo.json', '**/package.json') }}-
             turbo-${{ runner.os }}-
 
+      - name: Resolve published plugin version
+        id: plugin-version
+        run: |
+          PLUGIN_VERSION="$(npm view @opencode-ai/plugin version)"
+          echo "plugin_version=${PLUGIN_VERSION}" >> "$GITHUB_OUTPUT"
+
       - name: Build Linux amd64 CLI
         run: |
           ./packages/opencode/script/build.ts --single
         env:
           OPENCODE_VERSION: ${{ needs.version.outputs.version }}
+          OPENCODE_PLUGIN_VERSION: ${{ steps.plugin-version.outputs.plugin_version }}
           OPENCODE_RELEASE: false
           OPENCODE_CHANNEL: canary
           OPENCODE_MODELS_URL: https://models.dev
