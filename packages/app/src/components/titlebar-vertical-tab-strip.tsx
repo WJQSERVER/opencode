@@ -33,7 +33,7 @@ export function TitlebarVerticalTabStrip(props: {
     const active = props.currentTab()
     if (!active) return
     scrollRef
-      ?.querySelector<HTMLElement>(`[data-tab-key="${tabKey(active)}"]`)
+      ?.querySelector<HTMLElement>(`[data-tab-key="${CSS.escape(tabKey(active))}"]`)
       ?.scrollIntoView({ block: "nearest" })
   }
 
