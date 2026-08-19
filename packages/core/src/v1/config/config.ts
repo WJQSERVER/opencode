@@ -182,6 +182,9 @@ export const Info = Schema.Struct({
       infinite_retry: Schema.optional(Schema.Boolean).annotate({
         description: "Retry provider failures indefinitely with a steady 30s interval after the initial backoff",
       }),
+      session_suffix_uwtb: Schema.optional(Schema.Boolean).annotate({
+        description: "Fix the session ID suffix to 'uwtb' for new sessions to stabilize upstream provider routing",
+      }),
       mcp_timeout: Schema.optional(PositiveInt).annotate({
         description: "Timeout in milliseconds for model context protocol (MCP) requests",
       }),

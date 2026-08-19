@@ -395,6 +395,18 @@ export const SettingsGeneralV2: Component<{
           </div>
         </SettingsRowV2>
 
+        <SettingsRowV2
+          title={language.t("settings.general.row.sessionSuffixUwtb.title")}
+          description={language.t("settings.general.row.sessionSuffixUwtb.description")}
+        >
+          <div data-action="settings-session-suffix-uwtb">
+            <Switch
+              checked={serverSync().data.config.experimental?.session_suffix_uwtb ?? false}
+              onChange={(checked) => void serverSync().updateConfig({ experimental: { session_suffix_uwtb: checked } })}
+            />
+          </div>
+        </SettingsRowV2>
+
         <Show when={mobile() && import.meta.env.VITE_OPENCODE_CHANNEL !== "prod"}>
           <SettingsRowV2
             title={language.t("settings.general.row.mobileTitlebarBottom.title")}

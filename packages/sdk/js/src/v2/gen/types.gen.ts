@@ -2025,6 +2025,7 @@ export type Config = {
     primary_tools?: Array<string>
     continue_loop_on_deny?: boolean
     infinite_retry?: boolean
+    session_suffix_uwtb?: boolean
     mcp_timeout?: number
     policies?: Array<ConfigV2ExperimentalPolicy>
   }

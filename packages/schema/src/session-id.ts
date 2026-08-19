@@ -5,10 +5,10 @@ import { statics } from "./schema"
 export const SessionID = Schema.String.check(Schema.isStartsWith("ses")).pipe(
   Schema.brand("SessionID"),
   statics((schema) => {
-    const create = () => schema.make("ses_" + descending())
+    const create = (suffix?: string) => schema.make("ses_" + descending(suffix))
     return {
       create,
-      descending: (id?: string) => (id === undefined ? create() : schema.make(id)),
+      descending: (id?: string, suffix?: string) => (id === undefined ? create(suffix) : schema.make(id)),
     }
   }),
 )
