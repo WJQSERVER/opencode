@@ -1089,6 +1089,8 @@ export const dict = {
   "settings.providers.tag.other": "Të tjera",
   "settings.models.title": "Modelet",
   "settings.models.description": "Cilësimet e modelit do të konfigurohen këtu.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Agjentët",
   "settings.agents.description": "Cilësimet e agjentit do të konfigurohen këtu.",
   "settings.commands.title": "Komandat",

@@ -1089,6 +1089,8 @@ export const dict = {
   "settings.providers.tag.other": "drugo",
   "settings.models.title": "Modeli",
   "settings.models.description": "Tukaj je mogoče konfigurirati nastavitve modela.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Agenti",
   "settings.agents.description": "Tukaj je mogoče konfigurirati nastavitve agenta.",
   "settings.commands.title": "Ukazi",

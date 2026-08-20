@@ -990,6 +990,8 @@ export const dict = {
   "settings.providers.tag.other": "その他",
   "settings.models.title": "モデル",
   "settings.models.description": "モデル設定は今後ここで構成できるようになります。",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "エージェント",
   "settings.agents.description": "エージェント設定は今後ここで構成できるようになります。",
   "settings.commands.title": "コマンド",

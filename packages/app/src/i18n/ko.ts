@@ -715,6 +715,8 @@ export const dict = {
   "settings.providers.tag.other": "기타",
   "settings.models.title": "모델",
   "settings.models.description": "모델 설정은 여기서 구성할 수 있습니다.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "에이전트",
   "settings.agents.description": "에이전트 설정은 여기서 구성할 수 있습니다.",
   "settings.commands.title": "명령어",

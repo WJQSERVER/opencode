@@ -1077,6 +1077,8 @@ export const dict = {
   "settings.providers.tag.other": "muud",
   "settings.models.title": "Mudelid",
   "settings.models.description": "Mudeli sätteid saab siin konfigureerida.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Agendid",
   "settings.agents.description": "Agendi seadeid saab siin konfigureerida.",
   "settings.commands.title": "Käsud",

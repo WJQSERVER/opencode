@@ -1,10 +1,11 @@
 import { useFilteredList } from "@opencode-ai/ui/hooks"
 import { ProviderIcon } from "@opencode-ai/ui/provider-icon"
+import { SelectV2 } from "@opencode-ai/ui/v2/select-v2"
 import { Switch } from "@opencode-ai/ui/v2/switch-v2"
 import { Icon as IconV2 } from "@opencode-ai/ui/v2/icon"
 import { IconButtonV2 } from "@opencode-ai/ui/v2/icon-button-v2"
 import { TextInputV2 } from "@opencode-ai/ui/v2/text-input-v2"
-import { type Component, For, Show } from "solid-js"
+import { type Component, createMemo, For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import { useModels } from "@/context/models"
@@ -25,11 +26,34 @@ export const SettingsModelsV2: Component = () => {
   const serverSdk = useServerSDK()
   const [store, setStore] = persisted(
     Persist.serverGlobal(serverSdk().scope, "settings-v2.models.providers"),
-    createStore({ collapsed: {} as Record<string, boolean> }),
+    createStore({ collapsed: {} as Record<string, boolean>, provider: null as string | null }),
   )
 
+  const providerOptions = createMemo(() => {
+    const seen = new Set<string>()
+    const list: { id: string; name: string }[] = []
+    for (const item of models.list()) {
+      if (seen.has(item.provider.id)) continue
+      seen.add(item.provider.id)
+      list.push({ id: item.provider.id, name: item.provider.name })
+    }
+    return list.sort((a, b) => {
+      const aIndex = popularProviders.indexOf(a.id)
+      const bIndex = popularProviders.indexOf(b.id)
+      const aPopular = aIndex >= 0
+      const bPopular = bIndex >= 0
+      if (aPopular && !bPopular) return -1
+      if (!aPopular && bPopular) return 1
+      if (aPopular && bPopular) return aIndex - bIndex
+      return a.name.localeCompare(b.name)
+    })
+  })
+
+  const allProviders = () => ({ id: null as string | null, name: language.t("settings.models.filter.all") })
+
   const list = useFilteredList<ModelItem>({
-    items: (_filter) => models.list(),
+    items: (_filter) =>
+      store.provider ? models.list().filter((item) => item.provider.id === store.provider) : models.list(),
     key: (x) => `${x.provider.id}:${x.id}`,
     filterKeys: ["provider.name", "name", "id"],
     sortBy: (a, b) => a.name.localeCompare(b.name),
@@ -54,29 +78,51 @@ export const SettingsModelsV2: Component = () => {
     <>
       <div class="settings-v2-tab-header settings-v2-tab-header--stacked">
         <h2 class="settings-v2-tab-title">{language.t("settings.models.title")}</h2>
-        <div class="settings-v2-tab-search">
-          <TextInputV2
-            type="search"
-            appearance="base"
-            value={list.filter()}
-            onInput={(event) => list.onInput(event.currentTarget.value)}
-            placeholder={language.t("dialog.model.search.placeholder")}
-            spellcheck={false}
-            autocorrect="off"
-            autocomplete="off"
-            autocapitalize="off"
-            aria-label={language.t("dialog.model.search.placeholder")}
-          />
-          <Show when={list.filter()}>
-            <IconButtonV2
-              type="button"
-              variant="ghost-muted"
-              size="small"
-              class="settings-v2-tab-search-clear"
-              icon={<IconV2 name="close" size="large" class="text-v2-icon-icon-muted" />}
-              onClick={() => list.clear()}
+        <div class="settings-v2-models-toolbar">
+          <div class="settings-v2-tab-search">
+            <TextInputV2
+              type="search"
+              appearance="base"
+              value={list.filter()}
+              onInput={(event) => list.onInput(event.currentTarget.value)}
+              placeholder={language.t("dialog.model.search.placeholder")}
+              spellcheck={false}
+              autocorrect="off"
+              autocomplete="off"
+              autocapitalize="off"
+              aria-label={language.t("dialog.model.search.placeholder")}
             />
-          </Show>
+            <Show when={list.filter()}>
+              <IconButtonV2
+                type="button"
+                variant="ghost-muted"
+                size="small"
+                class="settings-v2-tab-search-clear"
+                icon={<IconV2 name="close" size="large" class="text-v2-icon-icon-muted" />}
+                onClick={() => list.clear()}
+              />
+            </Show>
+          </div>
+          <SelectV2
+            appearance="base"
+            class="settings-v2-models-provider-filter"
+            placeholder={language.t("settings.models.filter.provider")}
+            value={(x) => (x.id ?? "all")}
+            options={[allProviders(), ...providerOptions()]}
+            current={
+              store.provider
+                ? providerOptions().find((x) => x.id === store.provider) ?? allProviders()
+                : allProviders()
+            }
+            onSelect={(value) => setStore("provider", value?.id ?? null)}
+          >
+            {(item) => (
+              <span class="flex min-w-0 items-center gap-2">
+                {item.id && <ProviderIcon id={item.id} width={PROVIDER_ICON_SIZE} height={PROVIDER_ICON_SIZE} />}
+                <span class="min-w-0 truncate">{item.name}</span>
+              </span>
+            )}
+          </SelectV2>
         </div>
       </div>
 
@@ -104,7 +150,8 @@ export const SettingsModelsV2: Component = () => {
             <For each={list.grouped.latest}>
               {(group) => {
                 const searching = () => list.filter().length > 0
-                const expanded = () => searching() || !store.collapsed[group.category]
+                const filtered = () => store.provider === group.category
+                const expanded = () => searching() || filtered() || !store.collapsed[group.category]
 
                 return (
                   <div
@@ -117,7 +164,7 @@ export const SettingsModelsV2: Component = () => {
                         type="button"
                         class="settings-v2-models-group-trigger"
                         aria-expanded={expanded()}
-                        disabled={searching()}
+                        disabled={searching() || filtered()}
                         onClick={() => setStore("collapsed", group.category, expanded())}
                       >
                         <span class="settings-v2-models-group-chevron">

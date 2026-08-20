@@ -1000,6 +1000,8 @@ export const dict = {
   "settings.providers.tag.other": "أخرى",
   "settings.models.title": "النماذج",
   "settings.models.description": "ستكون إعدادات النموذج قابلة للتكوين هنا.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "الوكلاء",
   "settings.agents.description": "ستكون إعدادات الوكيل قابلة للتكوين هنا.",
   "settings.commands.title": "الأوامر",

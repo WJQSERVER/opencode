@@ -1080,6 +1080,8 @@ export const dict = {
   "settings.providers.tag.other": "Annað",
   "settings.models.title": "Fyrimyndir",
   "settings.models.description": "Model innstillingar verða stillaðar her.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Agentar",
   "settings.agents.description": "Agentinnstillingar verða stillaðar her.",
   "settings.commands.title": "Skipanir",

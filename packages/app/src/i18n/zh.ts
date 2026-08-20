@@ -1050,6 +1050,8 @@ export const dict = {
 
   "settings.models.title": "模型",
   "settings.models.description": "可在此处配置模型设置。",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
 
   "settings.agents.title": "智能体",
   "settings.agents.description": "可在此处配置智能体设置。",

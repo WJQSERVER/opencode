@@ -1078,6 +1078,8 @@ export const dict: Record<string, string> = {
   "settings.providers.tag.other": "অন্যান্য",
   "settings.models.title": "মডেল",
   "settings.models.description": "মডেল সেটিংস এখানে কনফিগারযোগ্য হবে।",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "এজেন্ট",
   "settings.agents.description": "এজেন্ট সেটিংস এখানে কনফিগারযোগ্য হবে।",
   "settings.commands.title": "কমান্ড",

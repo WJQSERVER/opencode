@@ -1086,6 +1086,8 @@ export const dict = {
   "settings.providers.tag.other": "Diğer",
   "settings.models.title": "Modeller",
   "settings.models.description": "Model ayarları burada yapılandırılabilecek.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Ajanlar",
   "settings.agents.description": "Ajan ayarları burada yapılandırılabilecek.",
   "settings.commands.title": "Komutlar",

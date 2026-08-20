@@ -1082,6 +1082,8 @@ export const dict = {
   "settings.providers.tag.other": "სხვა",
   "settings.models.title": "მოდელები",
   "settings.models.description": "მოდელის პარამეტრების კონფიგურაცია იქნება აქ.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "აგენტები",
   "settings.agents.description": "აგენტის პარამეტრების კონფიგურაცია იქნება აქ.",
   "settings.commands.title": "ბრძანებები",

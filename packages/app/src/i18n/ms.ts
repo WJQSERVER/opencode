@@ -1083,6 +1083,8 @@ export const dict = {
   "settings.providers.tag.other": "Lain-lain",
   "settings.models.title": "Model",
   "settings.models.description": "Tetapan model boleh dikonfigurasi di sini.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Ejen",
   "settings.agents.description": "Tetapan ejen boleh dikonfigurasi di sini.",
   "settings.commands.title": "Arahan",

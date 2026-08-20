@@ -1087,6 +1087,8 @@ export const dict = {
   "settings.providers.tag.other": "Övrigt",
   "settings.models.title": "Modeller",
   "settings.models.description": "Modellinställningar kommer att kunna konfigureras här.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Agenter",
   "settings.agents.description": "Agentinställningar kommer att kunna konfigureras här.",
   "settings.commands.title": "Kommandon",

@@ -1094,6 +1094,8 @@ export const dict = {
   "settings.providers.tag.other": "Más",
   "settings.models.title": "Modellek",
   "settings.models.description": "A modellbeállítások itt konfigurálhatók.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Ügynökök",
   "settings.agents.description": "Az ügynök beállításai itt konfigurálhatók.",
   "settings.commands.title": "Parancsok",

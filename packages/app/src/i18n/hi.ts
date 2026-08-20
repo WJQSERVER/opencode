@@ -1090,6 +1090,8 @@ export const dict = {
   "settings.providers.tag.other": "अन्य",
   "settings.models.title": "मॉडल",
   "settings.models.description": "मॉडल सेटिंग्स यहां कॉन्फ़िगर करने योग्य होंगी।",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "एजेंट",
   "settings.agents.description": "एजेंट सेटिंग्स यहां कॉन्फ़िगर करने योग्य होंगी।",
   "settings.commands.title": "कमांड",

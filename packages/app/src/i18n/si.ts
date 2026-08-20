@@ -1079,6 +1079,8 @@ export const dict: Record<string, string> = {
   "settings.providers.tag.other": "වෙනත්",
   "settings.models.title": "ආකෘති",
   "settings.models.description": "ආදර්ශ සැකසුම් මෙහි වින්‍යාසගත වනු ඇත.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "නියෝජිතයන්",
   "settings.agents.description": "නියෝජිත සැකසුම් මෙහි වින්‍යාස කළ හැක.",
   "settings.commands.title": "විධාන",

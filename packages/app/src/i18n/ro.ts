@@ -1088,6 +1088,8 @@ export const dict = {
   "settings.providers.tag.other": "Altele",
   "settings.models.title": "Modele",
   "settings.models.description": "Setările modelelor vor putea fi configurate aici.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Agenți",
   "settings.agents.description": "Setările agenților vor putea fi configurate aici.",
   "settings.commands.title": "Comenzi",

@@ -372,6 +372,29 @@
   transform: translateY(-50%);
 }
 
+.settings-v2-models-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-v2-models-toolbar .settings-v2-tab-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-v2-models-provider-filter {
+  flex-shrink: 0;
+  width: 168px;
+}
+
+.settings-v2-models-provider-filter [data-slot="select-v2-value-text"] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .settings-v2-models {
   gap: 12px;
 }

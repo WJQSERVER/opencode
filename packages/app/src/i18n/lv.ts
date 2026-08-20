@@ -1088,6 +1088,8 @@ export const dict = {
   "settings.providers.tag.other": "Citi",
   "settings.models.title": "Modeļi",
   "settings.models.description": "Modeļu iestatījumus varēs konfigurēt šeit.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Aģenti",
   "settings.agents.description": "Šeit varēs konfigurēt aģentu iestatījumus.",
   "settings.commands.title": "Komandas",

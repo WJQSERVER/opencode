@@ -1087,6 +1087,8 @@ export const dict = {
   "settings.providers.tag.other": "ہور",
   "settings.models.title": "ماڈل",
   "settings.models.description": "ماڈل دی ترتیبات ایتھے ترتیب دے قابل ہون گیاں۔",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "ایجنٹاں",
   "settings.agents.description": "Agent ترتیبات ایتھے ترتیب دے قابل ہون گیاں۔",
   "settings.commands.title": "کمانڈز",

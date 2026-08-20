@@ -1090,6 +1090,8 @@ export const dict = {
   "settings.providers.tag.other": "Այլ",
   "settings.models.title": "Մոդելներ",
   "settings.models.description": "Մոդելի կարգավորումները կարգավորելի կլինեն այստեղ։",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Գործակալներ",
   "settings.agents.description": "Գործակալի կարգավորումները կկարգավորվեն այստեղ։",
   "settings.commands.title": "Հրամաններ",

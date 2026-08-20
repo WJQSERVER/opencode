@@ -1081,6 +1081,8 @@ export const dict = {
   "settings.providers.tag.other": "دیگر",
   "settings.models.title": "مدل ها",
   "settings.models.description": "تنظیمات مدل در اینجا قابل تنظیم خواهد بود.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "عوامل",
   "settings.agents.description": "تنظیمات عامل در اینجا قابل تنظیم خواهد بود.",
   "settings.commands.title": "دستورات",

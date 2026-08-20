@@ -1188,6 +1188,8 @@ export const dict = {
   "settings.providers.tag.other": "Інше",
   "settings.models.title": "Моделі",
   "settings.models.description": "Налаштування моделей будуть доступні тут.",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "Агенти",
   "settings.agents.description": "Налаштування агентів будуть доступні тут.",
   "settings.commands.title": "Команди",

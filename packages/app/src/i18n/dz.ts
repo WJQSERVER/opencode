@@ -1104,6 +1104,8 @@ export const dict: Record<string, string> = {
   "settings.providers.tag.other": "གཞན",
   "settings.models.title": "དཔེ་ཚད།",
   "settings.models.description": "དཔེ་ཚད་སྒྲིག་སྟངས་ཚུ་ནཱ་ལུ་རིམ་སྒྲིག་འབད་བཏུབ་འོང་།",
+  "settings.models.filter.provider": "Filter by provider",
+  "settings.models.filter.all": "All providers",
   "settings.agents.title": "ལས་ཚབ་ཚུ།",
   "settings.agents.description": "ལས་ཚབ་སྒྲིག་སྟངས་ཚུ་ནཱ་ལུ་རིམ་སྒྲིག་འབད་བཏུབ་འོང་།",
   "settings.commands.title": "བརྡ་བཀོད་ཚུ།",
