@@ -992,6 +992,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "သင်သည် ယခုအခါ အပြင်အဆင်အသစ်ကို အသုံးပြုနေပါသည်။",
   "settings.general.row.newInterfaceNotice.description": "ယခင်အပြင်အဆင်ကို မရနိုင်တော့ပါ။",
   "settings.general.row.newInterfaceNotice.dismiss": "ပယ်ရန်",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "ဇူးမ်ချဲ့ရန် ဖိပါ။",
   "settings.general.row.pinchZoom.description":
     "ဇူးမ်လုပ်ရန် trackpad pinch နှင့် Ctrl-scroll gestures ကို ခွင့်ပြုပါ။",

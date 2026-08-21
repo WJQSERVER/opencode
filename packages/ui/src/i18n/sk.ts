@@ -132,6 +132,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Vyberte agenta",
   "ui.promptInput.chooseModel": "Vyberte model",
   "ui.promptInput.chooseVariant": "Vyberte variant modelu",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Odoslať",
   "ui.promptInput.stop": "Zastaviť",
   "ui.tabs.close": "Zavrieť kartu",

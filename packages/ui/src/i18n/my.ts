@@ -125,6 +125,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "အေးဂျင့်ကို ရွေးပါ။",
   "ui.promptInput.chooseModel": "မော်ဒယ်ကို ရွေးပါ။",
   "ui.promptInput.chooseVariant": "မော်ဒယ်အမျိုးအစားကို ရွေးပါ။",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "ပို့ပါ။",
   "ui.promptInput.stop": "ရပ်ပါ။",
   "ui.tabs.close": "တဘ်ကို ပိတ်ပါ။",

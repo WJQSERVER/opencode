@@ -996,6 +996,14 @@ export const dict: Record<string, string> = {
   "settings.general.row.newInterfaceNotice.title": "ད་ཁྱོད་ཀྱིས་སྒྲིག་བཀོད་གསརཔ་ལག་ལེན་འཐབ་དོ།",
   "settings.general.row.newInterfaceNotice.description": "ཧེ་མའི་སྒྲིག་བཀོད་འདི་ ད་ལས་ཕར་འཐོབ་མི་ཚུགས།",
   "settings.general.row.newInterfaceNotice.dismiss": "ཁུངས༌མེད༌བརྩི༌ནི",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "རྒྱས་ཟུམ་འབད་ནི་ལུ་ ཨེབ་གཏང་།",
   "settings.general.row.pinchZoom.description": "ཊེག་པེཌི་པིནཆི་དང་ Ctrl-བཤུད་སྒྲིལ་བརྡ་མཚོན་ཚུ་རྒྱས་ཟུམ་འབད་བཅུག།",
   "settings.general.row.wayland.title": "ས་གནས་ཀྱི་ Waylandལག་ལེན་འཐབ།",

@@ -128,6 +128,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Alege agentul",
   "ui.promptInput.chooseModel": "Alege modelul",
   "ui.promptInput.chooseVariant": "Alege varianta modelului",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Trimite",
   "ui.promptInput.stop": "Oprește",
   "ui.tabs.close": "Închide fila",

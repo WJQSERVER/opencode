@@ -127,6 +127,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Agentni tanlang",
   "ui.promptInput.chooseModel": "Modelni tanlang",
   "ui.promptInput.chooseVariant": "Model variantini tanlang",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Yuborish",
   "ui.promptInput.stop": "To'xtang",
   "ui.tabs.close": "Tabni yoping",

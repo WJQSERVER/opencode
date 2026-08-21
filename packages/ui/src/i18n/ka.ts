@@ -124,6 +124,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "აირჩიე აგენტი",
   "ui.promptInput.chooseModel": "აირჩიე მოდელი",
   "ui.promptInput.chooseVariant": "აირჩიე მოდელის ვარიანტი",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "გაგზავნა",
   "ui.promptInput.stop": "შეჩერება",
   "ui.tabs.close": "ჩანართის დახურვა",

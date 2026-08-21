@@ -972,6 +972,14 @@ export const dict: Record<string, string> = {
   "settings.general.row.newInterfaceNotice.title": "ඔබ දැන් නව පිරිසැලසුමක් භාවිතා කරයි",
   "settings.general.row.newInterfaceNotice.description": "පෙර පිරිසැලසුම තවදුරටත් නොමැත",
   "settings.general.row.newInterfaceNotice.dismiss": "අස් කරන්න",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "විශාලනය කිරීමට පින්ච් කරන්න",
   "settings.general.row.pinchZoom.description":
     "විශාලනය කිරීමට ට්‍රැක්පෑඩ් පින්ච් කිරීමට සහ Ctrl-අනුචලන අභිනයන්ට ඉඩ දෙන්න",

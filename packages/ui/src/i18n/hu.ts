@@ -126,6 +126,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Válasszon ügynököt",
   "ui.promptInput.chooseModel": "Válasszon modellt",
   "ui.promptInput.chooseVariant": "Válasszon modellváltozatot",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Elküld",
   "ui.promptInput.stop": "Leállítás",
   "ui.tabs.close": "Lap bezárása",

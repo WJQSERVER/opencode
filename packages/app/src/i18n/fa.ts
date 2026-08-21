@@ -974,6 +974,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "اکنون در حال استفاده از طرح بندی جدید هستید",
   "settings.general.row.newInterfaceNotice.description": "طرح قبلی دیگر در دسترس نیست",
   "settings.general.row.newInterfaceNotice.dismiss": "رد کردن",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "برای بزرگنمایی، خرج کردن",
   "settings.general.row.pinchZoom.description": "به ژست‌های پیمایشی Ctrl و حرکت‌های پد لمسی اجازه بزرگ‌نمایی بدهید",
   "settings.general.row.wayland.title": "از Wayland بومی استفاده کنید",

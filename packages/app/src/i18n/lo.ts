@@ -968,6 +968,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "ຕອນນີ້ທ່ານກຳລັງໃຊ້ໂຄງຮ່າງໃໝ່",
   "settings.general.row.newInterfaceNotice.description": "ຮູບແບບກ່ອນໜ້ານີ້ບໍ່ມີແລ້ວ",
   "settings.general.row.newInterfaceNotice.dismiss": "ປິດ",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "ບີບເພື່ອຊູມ",
   "settings.general.row.pinchZoom.description": "ອະ​ນຸ​ຍາດ​ໃຫ້​ການ pinch trackpad ແລະ gestures Ctrl-scroll ເພື່ອຊູມ",
   "settings.general.row.wayland.title": "ໃຊ້ Wayland ພື້ນເມືອງ",

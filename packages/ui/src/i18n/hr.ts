@@ -129,6 +129,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Odaberite agenta",
   "ui.promptInput.chooseModel": "Odaberite model",
   "ui.promptInput.chooseVariant": "Odaberite varijantu modela",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Poslati",
   "ui.promptInput.stop": "Zaustavi",
   "ui.tabs.close": "Zatvori karticu",

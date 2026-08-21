@@ -983,6 +983,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "Tani po përdorni strukturë të re",
   "settings.general.row.newInterfaceNotice.description": "Paraqitja e mëparshme nuk është më e disponueshme",
   "settings.general.row.newInterfaceNotice.dismiss": "Largoje",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "Pini për të zmadhuar",
   "settings.general.row.pinchZoom.description": "Lejo zmadhimin e kapjes së tastierës dhe gjestet e lëvizjes Ctrl",
   "settings.general.row.wayland.title": "Përdorni Wayland amtare",

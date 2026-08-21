@@ -124,6 +124,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Veldu fulltrúa",
   "ui.promptInput.chooseModel": "Veldu líkan",
   "ui.promptInput.chooseVariant": "Veldu gerð afbrigði",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Senda",
   "ui.promptInput.stop": "Stöðva",
   "ui.tabs.close": "Loka flipa",

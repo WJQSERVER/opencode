@@ -124,6 +124,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Chọn tác nhân",
   "ui.promptInput.chooseModel": "Chọn mô hình",
   "ui.promptInput.chooseVariant": "Chọn biến thể mô hình",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Gửi",
   "ui.promptInput.stop": "Dừng",
   "ui.tabs.close": "Đóng tab",

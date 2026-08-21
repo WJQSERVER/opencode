@@ -1047,6 +1047,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "이제 새 레이아웃을 사용 중입니다",
   "settings.general.row.newInterfaceNotice.description": "이전 레이아웃은 더 이상 사용할 수 없습니다",
   "settings.general.row.newInterfaceNotice.dismiss": "닫기",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "핀치 줌",
   "settings.general.row.pinchZoom.description": "트랙패드 핀치 및 Ctrl-스크롤 제스처로 확대/축소 허용",
   "settings.updates.action.downloading": "다운로드 중...",

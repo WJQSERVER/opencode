@@ -129,6 +129,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "เลือกเอเจนต์",
   "ui.promptInput.chooseModel": "เลือกโมเดล",
   "ui.promptInput.chooseVariant": "เลือกรูปแบบโมเดล",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "ส่ง",
   "ui.promptInput.stop": "หยุด",
 

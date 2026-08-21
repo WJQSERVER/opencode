@@ -135,6 +135,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Pilih agen",
   "ui.promptInput.chooseModel": "Pilih model",
   "ui.promptInput.chooseVariant": "Pilih varian model",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Kirim",
   "ui.promptInput.stop": "Hentikan",
 

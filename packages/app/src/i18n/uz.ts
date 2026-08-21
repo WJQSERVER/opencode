@@ -987,6 +987,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "Siz hozir yangi tartibdan foydalanmoqdasiz",
   "settings.general.row.newInterfaceNotice.description": "Oldingi tartib endi mavjud emas",
   "settings.general.row.newInterfaceNotice.dismiss": "Rad etish",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "Kattalashtirish uchun chimchilang",
   "settings.general.row.pinchZoom.description":
     "Kattalashtirish uchun trekpadni chimchilash va Ctrl-aylantirish imo-ishoralariga ruxsat bering",

@@ -132,6 +132,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Pasirinkite agentą",
   "ui.promptInput.chooseModel": "Pasirinkite modelį",
   "ui.promptInput.chooseVariant": "Pasirinkite modelio variantą",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Siųsti",
   "ui.promptInput.stop": "Stabdyti",
   "ui.tabs.close": "Uždaryti skirtuką",

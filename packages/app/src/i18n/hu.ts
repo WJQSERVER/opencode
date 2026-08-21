@@ -986,6 +986,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "Most új elrendezést használ",
   "settings.general.row.newInterfaceNotice.description": "Az előző elrendezés már nem elérhető",
   "settings.general.row.newInterfaceNotice.dismiss": "Elvetés",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "Csípje össze a nagyításhoz",
   "settings.general.row.pinchZoom.description":
     "Engedélyezze az érintőpad összecsípését és a Ctrl-görgetést a nagyításhoz",

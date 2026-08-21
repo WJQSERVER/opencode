@@ -124,6 +124,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "ເລືອກຕົວແທນ",
   "ui.promptInput.chooseModel": "ເລືອກຕົວແບບ",
   "ui.promptInput.chooseVariant": "ເລືອກຕົວແປຕົວແບບ",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "ສົ່ງ",
   "ui.promptInput.stop": "ຢຸດ",
   "ui.tabs.close": "ປິດແຖບ",

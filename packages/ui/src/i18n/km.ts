@@ -125,6 +125,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "ជ្រើសរើសភ្នាក់ងារ",
   "ui.promptInput.chooseModel": "ជ្រើសរើសម៉ូដែល",
   "ui.promptInput.chooseVariant": "ជ្រើសរើសវ៉ារ្យ៉ង់ម៉ូដែល",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "ផ្ញើ",
   "ui.promptInput.stop": "ឈប់",
   "ui.tabs.close": "បិទផ្ទាំង",

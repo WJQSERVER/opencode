@@ -971,6 +971,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "ឥឡូវនេះ អ្នកកំពុងប្រើប្លង់ថ្មី។",
   "settings.general.row.newInterfaceNotice.description": "ប្លង់ពីមុនលែងមានទៀតហើយ",
   "settings.general.row.newInterfaceNotice.dismiss": "ច្រានចោល",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "ខ្ទាស់ដើម្បីពង្រីក",
   "settings.general.row.pinchZoom.description": "អនុញ្ញាត​ឱ្យ​ចុច​បន្ទះ​បន្ទះ​និង​កាយវិការ​បញ្ជា​-​រមូរ​ដើម្បី​ពង្រីក",
   "settings.general.row.wayland.title": "ប្រើ Wayland ដើម",

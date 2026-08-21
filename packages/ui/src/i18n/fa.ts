@@ -124,6 +124,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "عامل را انتخاب کنید",
   "ui.promptInput.chooseModel": "مدل را انتخاب کنید",
   "ui.promptInput.chooseVariant": "نوع مدل را انتخاب کنید",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "ارسال کنید",
   "ui.promptInput.stop": "توقف کنید",
   "ui.tabs.close": "بستن برگه",

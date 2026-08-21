@@ -129,6 +129,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "Изаберите агента",
   "ui.promptInput.chooseModel": "Изаберите модел",
   "ui.promptInput.chooseVariant": "Изаберите варијанту модела",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Пошаљи",
   "ui.promptInput.stop": "Стоп",
   "ui.tabs.close": "Затвори картицу",

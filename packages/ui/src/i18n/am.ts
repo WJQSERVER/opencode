@@ -123,6 +123,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "ወኪሉን ይምረጡ",
   "ui.promptInput.chooseModel": "ሞዴል ምረጥ",
   "ui.promptInput.chooseVariant": "የሞዴል ልዩነትን ምረጥ",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "ላክ",
   "ui.promptInput.stop": "አቁም",
   "ui.tabs.close": "ትርፉን ዝጋ",

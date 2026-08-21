@@ -128,6 +128,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Izvēlies aģentu",
   "ui.promptInput.chooseModel": "Izvēlies modeli",
   "ui.promptInput.chooseVariant": "Izvēlies modeļa variantu",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Sūtīt",
   "ui.promptInput.stop": "Apturēt",
   "ui.tabs.close": "Aizvērt cilni",

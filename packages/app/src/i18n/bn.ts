@@ -973,6 +973,14 @@ export const dict: Record<string, string> = {
   "settings.general.row.newInterfaceNotice.title": "আপনি এখন নতুন লেআউট ব্যবহার করছেন",
   "settings.general.row.newInterfaceNotice.description": "আগের লেআউট আর উপলব্ধ নেই৷",
   "settings.general.row.newInterfaceNotice.dismiss": "খারিজ",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "জুম করতে চিমটি করুন",
   "settings.general.row.pinchZoom.description": "ট্র্যাকপ্যাড পিঞ্চ এবং Ctrl - স্ক্রোল অঙ্গভঙ্গি জুম করার অনুমতি দিন",
   "settings.general.row.wayland.title": "স্থানীয় Wayland ব্যবহার করুন",

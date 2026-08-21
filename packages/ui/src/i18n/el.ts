@@ -124,6 +124,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Επιλογή πράκτορα",
   "ui.promptInput.chooseModel": "Επιλογή μοντέλου",
   "ui.promptInput.chooseVariant": "Επιλογή παραλλαγής μοντέλου",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Αποστολή",
   "ui.promptInput.stop": "Διακοπή",
   "ui.tabs.close": "Κλείσιμο καρτέλας",

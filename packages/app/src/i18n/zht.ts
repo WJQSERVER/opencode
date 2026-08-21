@@ -938,6 +938,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "你現在使用的是新版面",
   "settings.general.row.newInterfaceNotice.description": "先前的版面已無法使用",
   "settings.general.row.newInterfaceNotice.dismiss": "忽略",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "雙指縮放",
   "settings.general.row.pinchZoom.description": "允許使用觸控板雙指開合和 Ctrl-捲動手勢縮放",
   "settings.general.row.wayland.title": "使用原生 Wayland",

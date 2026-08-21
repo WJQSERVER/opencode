@@ -145,6 +145,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "اختيار وكيل",
   "ui.promptInput.chooseModel": "اختيار نموذج",
   "ui.promptInput.chooseVariant": "اختيار متغير النموذج",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "إرسال",
   "ui.promptInput.stop": "إيقاف",
 

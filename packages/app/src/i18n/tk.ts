@@ -979,6 +979,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "Indi täze düzülişi ulanýarsyňyz",
   "settings.general.row.newInterfaceNotice.description": "Öňki düzüliş indi elýeterli däl",
   "settings.general.row.newInterfaceNotice.dismiss": "Işden aýyrmak",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "Ulaltmak üçin çümmük",
   "settings.general.row.pinchZoom.description": "Trackpad çümmüklerine we Ctrl-aýlaw hereketlerine ýakynlaşdyryň",
   "settings.general.row.wayland.title": "Nativeerli Wayland ulanyň",

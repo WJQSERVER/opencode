@@ -131,6 +131,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "選擇代理程式",
   "ui.promptInput.chooseModel": "選擇模型",
   "ui.promptInput.chooseVariant": "選擇模型變體",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "傳送",
   "ui.promptInput.stop": "停止",
 

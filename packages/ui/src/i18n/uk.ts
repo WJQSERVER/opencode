@@ -144,6 +144,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Вибрати агента",
   "ui.promptInput.chooseModel": "Вибрати модель",
   "ui.promptInput.chooseVariant": "Вибрати варіант моделі",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Надіслати",
   "ui.promptInput.stop": "Зупинити",
 

@@ -984,6 +984,14 @@ export const dict = {
   "settings.general.row.newInterfaceNotice.title": "अब आप नए लेआउट का उपयोग कर रहे हैं",
   "settings.general.row.newInterfaceNotice.description": "पिछला लेआउट अब उपलब्ध नहीं है",
   "settings.general.row.newInterfaceNotice.dismiss": "हटाएँ",
+"settings.general.row.verticalTabs.title": "Vertical tabs",
+  "settings.general.row.verticalTabs.description":
+    "Show session tabs in a vertical strip on the left side of the window",
+  "settings.general.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.general.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30s interval instead of stopping after five attempts",
+  "settings.general.row.sessionSuffixUwtb.title": "Sticky session suffix",
+  "settings.general.row.sessionSuffixUwtb.description": "Fix new session IDs to end in 'uwtb' for stable upstream routing",
   "settings.general.row.pinchZoom.title": "ज़ूम करने के लिए पिंच करें",
   "settings.general.row.pinchZoom.description": "ट्रैकपैड पिंच और Ctrl-स्क्रॉल जेस्चर को ज़ूम करने की अनुमति दें",
   "settings.general.row.wayland.title": "नेटिव Wayland का उपयोग करें",

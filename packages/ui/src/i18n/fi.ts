@@ -191,6 +191,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Valitse agentti",
   "ui.promptInput.chooseModel": "Valitse malli",
   "ui.promptInput.chooseVariant": "Valitse mallivariantti",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Lähetä",
   "ui.promptInput.stop": "Pysäytä",
   "ui.tabs.close": "Sulje välilehti",

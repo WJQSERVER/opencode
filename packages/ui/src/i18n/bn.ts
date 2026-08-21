@@ -126,6 +126,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "এজেন্ট নির্বাচন করুন",
   "ui.promptInput.chooseModel": "মডেল নির্বাচন করুন",
   "ui.promptInput.chooseVariant": "মডেল বৈকল্পিক চয়ন করুন",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "পাঠান",
   "ui.promptInput.stop": "থামো",
   "ui.tabs.close": "ট্যাব বন্ধ করুন",

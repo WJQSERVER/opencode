@@ -128,6 +128,8 @@ export const dict: Record<string, string> = {
   "ui.promptInput.chooseAgent": "Trieu un agent",
   "ui.promptInput.chooseModel": "Tria el model",
   "ui.promptInput.chooseVariant": "Trieu la variant del model",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Enviar",
   "ui.promptInput.stop": "Atureu-vos",
   "ui.tabs.close": "Tanca la pestanya",

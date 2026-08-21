@@ -124,6 +124,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "Агент сонгох",
   "ui.promptInput.chooseModel": "Загвар сонгох",
   "ui.promptInput.chooseVariant": "Загварын хувилбарыг сонгоно уу",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Илгээх",
   "ui.promptInput.stop": "Зогс",
   "ui.tabs.close": "Табыг хаах",

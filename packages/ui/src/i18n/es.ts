@@ -133,6 +133,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "Elegir agente",
   "ui.promptInput.chooseModel": "Elegir modelo",
   "ui.promptInput.chooseVariant": "Elegir variante del modelo",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Enviar",
   "ui.promptInput.stop": "Detener",
 

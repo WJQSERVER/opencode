@@ -105,6 +105,8 @@ export const dict = {
   "ui.promptInput.chooseAgent": "에이전트 선택",
   "ui.promptInput.chooseModel": "모델 선택",
   "ui.promptInput.chooseVariant": "모델 변형 선택",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "전송",
   "ui.promptInput.stop": "중지",
 

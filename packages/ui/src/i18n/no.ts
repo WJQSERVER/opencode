@@ -108,6 +108,8 @@ export const dict: Record<Keys, string> = {
   "ui.promptInput.chooseAgent": "Velg agent",
   "ui.promptInput.chooseModel": "Velg modell",
   "ui.promptInput.chooseVariant": "Velg modellvariant",
+  "ui.promptInput.autoAccept": "Auto-accept permissions for this session",
+  "ui.promptInput.autoAccept.on": "Auto-accepting permissions for this session",
   "ui.promptInput.send": "Send",
   "ui.promptInput.stop": "Stopp",
 
