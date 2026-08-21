@@ -16,9 +16,9 @@ import { downloadSessionExport, fetchSessionExport, sessionExportFilename } from
 import { findLast } from "@opencode-ai/core/util/array"
 import { createSessionTabs } from "@/pages/session/helpers"
 import { extractPromptFromParts } from "@/utils/prompt"
-import { clipboardWrite } from "@/utils/clipboard"
 import { Message, Part, UserMessage } from "@opencode-ai/sdk/v2"
 import { useSessionLayout } from "@/pages/session/session-layout"
+import { useSessionArchive } from "@/pages/session/session-archive"
 import { createSessionOwnership } from "./session-ownership"
 import { useLocal } from "@/context/local"
 
@@ -53,6 +53,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
   const navigate = useNavigate()
   const { params, sessionKey, tabs, view } = useSessionLayout()
   const sessionOwnership = createSessionOwnership(sessionKey)
+  const sessionArchive = useSessionArchive()
   const openDialog = async <T,>(load: () => Promise<T>, show: (value: T) => void) => {
     const owner = sessionOwnership.capture()
     const value = await load()
@@ -146,7 +147,29 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     if (sessionID) return permission.isAutoAccepting(sessionID, sdk().directory)
     return permission.isAutoAcceptingDirectory(sdk().directory)
   }
-  const write = (value: string) => clipboardWrite(value)
+  const write = async (value: string) => {
+    const body = typeof document === "undefined" ? undefined : document.body
+    if (body) {
+      const textarea = document.createElement("textarea")
+      textarea.value = value
+      textarea.setAttribute("readonly", "")
+      textarea.style.position = "fixed"
+      textarea.style.opacity = "0"
+      textarea.style.pointerEvents = "none"
+      body.appendChild(textarea)
+      textarea.select()
+      const copied = document.execCommand("copy")
+      body.removeChild(textarea)
+      if (copied) return true
+    }
+
+    const clipboard = typeof navigator === "undefined" ? undefined : navigator.clipboard
+    if (!clipboard?.writeText) return false
+    return clipboard.writeText(value).then(
+      () => true,
+      () => false,
+    )
+  }
 
   const copyShare = async (url: string, existing: boolean) => {
     if (!(await write(url))) {
@@ -475,6 +498,16 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       slash: "export",
       disabled: !params.id,
       onSelect: exportSession,
+    }),
+    sessionCommand({
+      id: "session.archive",
+      title: language.t("command.session.archive"),
+      keybind: "mod+shift+backspace",
+      disabled: !params.id,
+      onSelect: () => {
+        const id = params.id
+        if (id) void sessionArchive.archive(id)
+      },
     }),
   ]
 
