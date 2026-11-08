@@ -2,8 +2,10 @@ export * as SessionRunnerLLM from "./llm.js"
 
 import { Message } from "@opencode/ai/effect"
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
+import type { Document } from "@opencode/schema/config"
 import { Cause, Effect, Exit, FiberMap, Layer } from "effect"
 import { Database } from "../../database/database.js"
+import { Config } from "../../config.js"
 import { Bus } from "../../bus.js"
 import { LocationLifecycle } from "../../location-lifecycle.js"
 import { InstructionState } from "../instruction-state.js"
@@ -51,6 +53,7 @@ const layer = Layer.effect(
     const context = yield* SessionContext.Service
     const modelTransport = yield* SessionModelTransport.Service
     const db = (yield* Database.Service).db
+    const config = yield* Config.Service
     const compaction = yield* SessionCompaction.Service
     const plugins = yield* Plugin.Service
     const hooks = yield* PluginHooks.Service
@@ -233,7 +236,13 @@ const layer = Layer.effect(
     const runStep = Effect.fn("SessionRunner.runStep")(function* (first: SessionContext.Loaded, step: number) {
       const sessionID = first.session.id
       let assistantMessageID = SessionMessage.ID.create()
-      const retry = yield* SessionRunnerRetry.make(bus, sessionID)
+      const entries = yield* config.entries()
+      const infinite =
+        entries.findLast(
+          (entry): entry is Document =>
+            entry.type === "document" && entry.info.experimental?.infinite_retry !== undefined,
+        )?.info.experimental?.infinite_retry === true
+      const retry = yield* SessionRunnerRetry.make(bus, sessionID, { infinite })
       let initial: SessionContext.Loaded | undefined = first
       let recoverOverflow = true
       let recoverContinuation = true
@@ -464,5 +473,6 @@ export const node = makeLocationNode({
     Snapshot.node,
     ToolOutput.node,
     Database.node,
+    Config.node,
   ],
 })

@@ -29,9 +29,9 @@ export interface Decision {
   readonly delay: number
 }
 
-export const policy = (sessionID: SessionSchema.ID) =>
+export const policy = (sessionID: SessionSchema.ID, opts?: { readonly infinite?: boolean }) =>
   Effect.gen(function* () {
-    const decide = yield* ModelRetry.policy
+    const decide = yield* ModelRetry.policy(opts)
     return (input: Input) =>
       Effect.gen(function* () {
         const next = yield* decide(input)
@@ -54,9 +54,9 @@ export const policy = (sessionID: SessionSchema.ID) =>
       })
   })
 
-export const make = (bus: Bus.Interface, sessionID: SessionSchema.ID) =>
+export const make = (bus: Bus.Interface, sessionID: SessionSchema.ID, opts?: { readonly infinite?: boolean }) =>
   Effect.gen(function* () {
-    const decide = yield* policy(sessionID)
+    const decide = yield* policy(sessionID, opts)
     const wait = (input: {
       readonly decision: Decision
       readonly assistantMessageID: SessionMessage.ID

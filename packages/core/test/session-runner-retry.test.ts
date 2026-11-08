@@ -90,6 +90,32 @@ describe("SessionRunnerRetry.policy", () => {
     }),
   )
 
+  it.effect("keeps retrying past the general allowance when infinite is enabled", () =>
+    Effect.gen(function* () {
+      const policy = yield* SessionRunnerRetry.policy(SessionSchema.ID.make("ses_retry"), { infinite: true })
+      const results: boolean[] = []
+      for (let i = 0; i < 15; i++) results.push((yield* policy(input(internal))).retry)
+      expect(results).toEqual(Array(15).fill(true))
+    }),
+  )
+
+  it.effect("settles the gap at a steady 30 seconds after the backoff window when infinite is enabled", () =>
+    Effect.gen(function* () {
+      const policy = yield* SessionRunnerRetry.policy(SessionSchema.ID.make("ses_retry"), { infinite: true })
+      const delays: number[] = []
+      for (let i = 0; i < 14; i++) {
+        const decision = yield* policy(input(internal))
+        if (!decision.retry) break
+        delays.push(decision.delay)
+        yield* TestClock.adjust(Duration.millis(decision.delay))
+      }
+      expect(delays.length).toBe(14)
+      // The first ten gaps are the jittered backoff capped at 10 seconds; the rest are exactly 30 seconds.
+      expect(delays.slice(0, 10).every((delay) => delay < 30_000)).toBe(true)
+      expect(delays.slice(10)).toEqual(Array(4).fill(30_000))
+    }),
+  )
+
   it.effect("doesn't spend the general allowance on an unreachable host", () =>
     Effect.gen(function* () {
       const policy = yield* SessionRunnerRetry.policy(SessionSchema.ID.make("ses_retry"))

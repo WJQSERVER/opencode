@@ -23,6 +23,10 @@ export class Info extends Schema.Class<Info>("ConfigExperimental.Info")({
     description:
       "Write each assistant part as its own session_part row instead of rewriting the whole message on every event. Defaults to false.",
   }),
+  infinite_retry: Schema.Boolean.pipe(optional).annotate({
+    description:
+      "Keep retrying provider failures indefinitely, settling at a steady 30-second interval after the initial backoff window. Defaults to false.",
+  }),
   image_generate: Schema.Union([
     Schema.Boolean,
     Schema.Struct({

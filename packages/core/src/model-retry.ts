@@ -35,6 +35,11 @@ const schedule = Schedule.max([
   }),
 )
 
+// With `infinite` enabled, retries continue after the capped backoff window, settling at a steady
+// 30-second gap forever instead of giving up. Unreachable hosts keep their own bounded budget.
+const steadySchedule = Schedule.spaced("30 seconds").pipe(Schedule.setInputType<Input>())
+const infiniteSchedule = schedule.pipe(Schedule.concat(steadySchedule))
+
 // This machine has no network path to the provider: the host name didn't resolve, or there is no route or interface.
 // While that lasts every attempt fails before reaching the provider, and the outage behind it (a router restart, a
 // dropped VPN, a laptop between networks) usually outlasts the general allowance, so these retry on their own budget:
@@ -64,34 +69,35 @@ const unreachableSchedule = Schedule.max([
 // dead provider hold a call for most of an hour. Cap those attempts well below it.
 const MAX_TIMEOUT_RETRIES = 3
 
-export const policy = Effect.gen(function* () {
-  const step = yield* Schedule.toStep(schedule)
-  const unreachable = yield* Schedule.toStep(unreachableSchedule)
-  let attempt = 1
-  let timeouts = 0
-  return (input: Input) =>
-    Effect.gen(function* () {
-      const now = yield* Clock.currentTimeMillis
-      // Unreachable failures don't spend the general allowance, so a flaky link that also drops streams keeps it.
-      const next = yield* (input.retry && isUnreachable(input.cause) ? unreachable : step)(now, input).pipe(
-        Pull.catchDone(() => Effect.succeed(undefined)),
-      )
-      if (!next) return undefined
-      const [, duration] = next
-      attempt++
-      if (input.cause.reason._tag === "Transport" && input.cause.reason.code === "Timeout") timeouts++
-      return {
-        attempt,
-        delay: Math.ceil(Duration.toMillis(duration)),
-        retry: input.retry && timeouts <= MAX_TIMEOUT_RETRIES,
-      }
-    })
-})
+export const policy = (opts?: { readonly infinite?: boolean }) =>
+  Effect.gen(function* () {
+    const step = yield* Schedule.toStep(opts?.infinite ? infiniteSchedule : schedule)
+    const unreachable = yield* Schedule.toStep(unreachableSchedule)
+    let attempt = 1
+    let timeouts = 0
+    return (input: Input) =>
+      Effect.gen(function* () {
+        const now = yield* Clock.currentTimeMillis
+        // Unreachable failures don't spend the general allowance, so a flaky link that also drops streams keeps it.
+        const next = yield* (input.retry && isUnreachable(input.cause) ? unreachable : step)(now, input).pipe(
+          Pull.catchDone(() => Effect.succeed(undefined)),
+        )
+        if (!next) return undefined
+        const [, duration] = next
+        attempt++
+        if (input.cause.reason._tag === "Transport" && input.cause.reason.code === "Timeout") timeouts++
+        return {
+          attempt,
+          delay: Math.ceil(Duration.toMillis(duration)),
+          retry: input.retry && timeouts <= MAX_TIMEOUT_RETRIES,
+        }
+      })
+  })
 
 /** Retry a buffered model call from scratch; failed attempts never contribute to its returned output. */
 export const retry = <A, R>(effect: Effect.Effect<A, AIError, R>) =>
   Effect.gen(function* () {
-    const decide = yield* policy
+    const decide = yield* policy()
     while (true) {
       const result = yield* Effect.result(effect)
       if (result._tag === "Success") return result.success
@@ -122,7 +128,7 @@ const notRun = (error: AIError) => {
 /** Retry a one-shot call only when the provider clearly didn't run it: rate limits, overload, unreachable hosts. */
 export const retryOneShot = <A, R>(effect: Effect.Effect<A, AIError, R>) =>
   Effect.gen(function* () {
-    const decide = yield* policy
+    const decide = yield* policy()
     let retries = 0
     while (true) {
       const result = yield* Effect.result(effect)

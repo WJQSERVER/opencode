@@ -2553,6 +2553,7 @@ export type ConfigEntry =
           artifacts?: boolean
           codemode_vm?: boolean
           part_rows?: boolean
+          infinite_retry?: boolean
           image_generate?: boolean | { model?: string | { providerID: string; model: string; variant?: string } }
           subagent_depth?: number
           location_idle_timeout?: string | false
