@@ -172,7 +172,8 @@ export const make = Effect.gen(function* () {
 
         const recorded = publisher.record()
         // A finished stream with no output and no tool calls produced nothing the transcript can show, like an
-        // incomplete stream. Snapshot the recorded finish for diagnosis without changing the step's outcome.
+        // incomplete stream. Snapshot the recorded finish for diagnosis; stop and tool-calls then retry as an
+        // incomplete stream below, while length keeps its output-limit recovery, which empty replies can trigger.
         const emptyFinish =
           Exit.isSuccess(stream) &&
           recorded.finish !== undefined &&
@@ -200,7 +201,18 @@ export const make = Effect.gen(function* () {
                 }),
               })
             : undefined
-        const llmFailure = streamFailure instanceof AIError ? streamFailure : unknownFinish
+        const emptyStop =
+          emptyFinish &&
+          unknownFinish === undefined &&
+          (recorded.finish?.finish === "stop" || recorded.finish?.finish === "tool-calls")
+            ? new AIError({
+                reason: new InvalidProviderOutputError({
+                  message: "The provider response finished without producing any output.",
+                  classification: "incomplete-stream",
+                }),
+              })
+            : undefined
+        const llmFailure = streamFailure instanceof AIError ? streamFailure : (unknownFinish ?? emptyStop)
         const llmError = llmFailure && !recorded.providerFailed ? toSessionError(llmFailure) : undefined
         const tokens = recorded.finish?.usage
         yield* Effect.annotateCurrentSpan({

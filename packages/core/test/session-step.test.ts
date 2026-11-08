@@ -1,5 +1,5 @@
 import { expect } from "bun:test"
-import { ai, LanguageModel, LLMEvent } from "@opencode/ai/effect"
+import { ai, AIError, LanguageModel, LLMEvent } from "@opencode/ai/effect"
 import { OpenAIChat } from "@opencode/ai/protocols/openai-chat"
 import { TestLLM } from "@opencode/ai/testing"
 import { Agent } from "@opencode/core/agent"
@@ -196,10 +196,15 @@ it.effect("records the cost the endpoint reports instead of the catalog price", 
       },
     )
     yield* llm.push(
-      TestLLM.complete({
-        reason: { normalized: "stop" },
-        usage: { inputTokens: 10, outputTokens: 4, nonCachedInputTokens: 10, cost: 0 },
-      }),
+      TestLLM.complete(
+        {
+          reason: { normalized: "stop" },
+          usage: { inputTokens: 10, outputTokens: 4, nonCachedInputTokens: 10, cost: 0 },
+        },
+        LLMEvent.textStart({ id: "text-1" }),
+        LLMEvent.textDelta({ id: "text-1", text: "Hello" }),
+        LLMEvent.textEnd({ id: "text-1" }),
+      ),
     )
     yield* steps.attempt({
       isLocationClosed: () => false,
@@ -228,7 +233,7 @@ it.effect("records the cost the endpoint reports instead of the catalog price", 
   }),
 )
 
-it.effect("logs a finish snapshot when the provider finishes without any output", () => {
+it.effect("retries a finished stream without any output as an incomplete stream", () => {
   const logs: Array<Record<string, unknown>> = []
   const logger = Logger.map(Logger.formatStructured, (entry) => {
     if (!Array.isArray(entry.message) || entry.message[0] !== "provider finished the step without any output") return
@@ -276,7 +281,99 @@ it.effect("logs a finish snapshot when the provider finishes without any output"
         usage: { inputTokens: 10, outputTokens: 0, nonCachedInputTokens: 10 },
       }),
     )
+    let cause: AIError | undefined
+    let retryable = false
     const result = yield* steps
+      .attempt({
+        isLocationClosed: () => false,
+        sessionID,
+        assistantMessageID,
+        agent: Agent.defaultID,
+        model,
+        prepared: {
+          retry: () => Effect.void,
+          request: ai.request({ model: model.model, prompt: "Hello" }),
+          options: {},
+          executeTool: () => Effect.die("no tools"),
+        },
+        retry: (failure, _error, isRetryable) =>
+          Effect.sync(() => {
+            cause = failure
+            retryable = isRetryable
+            return isRetryable ? { retry: true, attempt: 2, delay: 0 } : { retry: false }
+          }),
+        recoverContinuation: true,
+        recoverOverflow: Effect.succeed(false),
+      })
+      .pipe(Effect.exit)
+    expect(Exit.isSuccess(result)).toBe(true)
+    if (!Exit.isSuccess(result)) return
+    expect(SessionStep.Outcome.$is("Retry")(result.value)).toBe(true)
+    if (!SessionStep.Outcome.$is("Retry")(result.value)) return
+    expect(result.value.decision).toEqual({ retry: true, attempt: 2, delay: 0 })
+    expect(cause?.reason._tag).toBe("InvalidProviderOutput")
+    expect(cause?.reason).toMatchObject({ classification: "incomplete-stream" })
+    expect(retryable).toBe(true)
+    expect(logs).toHaveLength(1)
+    expect(logs[0]).toMatchObject({
+      classification: "incomplete-stream",
+      sessionID,
+      assistantMessageID,
+      finish: "stop",
+      rawFinish: "stop",
+    })
+  }).pipe(Effect.provide(Logger.layer([logger])))
+})
+
+it.effect("fails the step when retries are declined for a finished stream without any output", () => {
+  const logs: Array<Record<string, unknown>> = []
+  const logger = Logger.map(Logger.formatStructured, (entry) => {
+    if (!Array.isArray(entry.message) || entry.message[0] !== "provider finished the step without any output") return
+    const details = entry.message[1]
+    if (typeof details === "object" && details !== null) logs.push(details as Record<string, unknown>)
+  })
+  return Effect.gen(function* () {
+    const db = (yield* Database.Service).db
+    const llm = yield* TestLLM.Test
+    const sessionID = Session.ID.create()
+    const assistantMessageID = SessionMessage.ID.create()
+    const steps = yield* SessionStep.make.pipe(
+      Effect.provide(
+        Layer.mock(Snapshot.Service)({
+          capture: () => Effect.succeed(undefined),
+          files: () => Effect.succeed([]),
+        }),
+      ),
+    )
+    yield* db
+      .insert(ProjectTable)
+      .values({ id: Project.ID.global, worktree: AbsolutePath.make("/project"), sandboxes: [] })
+      .run()
+    yield* db
+      .insert(SessionTable)
+      .values({ id: sessionID, project_id: Project.ID.global, slug: "step", directory: "/project", version: "test" })
+      .run()
+    const model = SessionRunnerModel.resolved(
+      LanguageModel.make({ id: "test-model", provider: "test", route: OpenAIChat.route }),
+      {
+        capabilities: { tools: true, input: ["text"], output: ["text"] },
+        limit: { context: 100_000, output: 1_000 },
+        cost: [
+          {
+            input: Money.USDPerMillionTokens.make(1),
+            output: Money.USDPerMillionTokens.make(2),
+            cache: { read: Money.USDPerMillionTokens.zero, write: Money.USDPerMillionTokens.zero },
+          },
+        ],
+      },
+    )
+    yield* llm.push(
+      TestLLM.complete({
+        reason: { normalized: "stop" },
+        usage: { inputTokens: 10, outputTokens: 0, nonCachedInputTokens: 10 },
+      }),
+    )
+    const error = yield* steps
       .attempt({
         isLocationClosed: () => false,
         sessionID,
@@ -293,16 +390,16 @@ it.effect("logs a finish snapshot when the provider finishes without any output"
         recoverContinuation: true,
         recoverOverflow: Effect.succeed(false),
       })
-      .pipe(Effect.exit)
-    // The outcome is unchanged: the step still completes on the empty response.
-    expect(Exit.isSuccess(result)).toBe(true)
+      .pipe(Effect.flip)
+    expect(error._tag).toBe("Session.StepFailedError")
+    if (error._tag !== "Session.StepFailedError") return
+    expect(error.error.message).toContain("without producing any output")
     expect(logs).toHaveLength(1)
-    expect(logs[0]).toMatchObject({
-      classification: "incomplete-stream",
-      sessionID,
-      assistantMessageID,
-      finish: "stop",
-      rawFinish: "stop",
-    })
+    const message = yield* db
+      .select()
+      .from(SessionMessageTable)
+      .where(eq(SessionMessageTable.id, assistantMessageID))
+      .get()
+    expect(message?.data).toMatchObject({ error: { message: expect.stringContaining("without producing any output") } })
   }).pipe(Effect.provide(Logger.layer([logger])))
 })
