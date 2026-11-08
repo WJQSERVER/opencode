@@ -171,6 +171,26 @@ export const make = Effect.gen(function* () {
         }
 
         const recorded = publisher.record()
+        // A finished stream with no output and no tool calls produced nothing the transcript can show, like an
+        // incomplete stream. Snapshot the recorded finish for diagnosis without changing the step's outcome.
+        const emptyFinish =
+          Exit.isSuccess(stream) &&
+          recorded.finish !== undefined &&
+          !recorded.providerFailed &&
+          !recorded.outputStarted &&
+          toolRuns.length === 0
+        if (emptyFinish && recorded.finish)
+          yield* Effect.logWarning("provider finished the step without any output", {
+            classification: "incomplete-stream",
+            sessionID: input.sessionID,
+            assistantMessageID: input.assistantMessageID,
+            agent: input.agent,
+            model: input.model.ref,
+            finish: recorded.finish.finish,
+            rawFinish: recorded.finish.rawFinish,
+            usage: recorded.finish.usage,
+            native: recorded.finish.native,
+          })
         const unknownFinish =
           Exit.isSuccess(stream) && recorded.finish?.finish === "unknown"
             ? new AIError({

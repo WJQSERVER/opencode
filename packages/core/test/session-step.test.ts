@@ -21,7 +21,7 @@ import { ToolOutput } from "@opencode/core/tool-output"
 import { Money } from "@opencode/schema/money"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 import { asc, eq } from "drizzle-orm"
-import { Effect, Exit, Layer } from "effect"
+import { Effect, Exit, Layer, Logger } from "effect"
 import { testEffect } from "./lib/effect"
 
 const it = testEffect(
@@ -227,3 +227,82 @@ it.effect("records the cost the endpoint reports instead of the catalog price", 
     expect(yield* db.select().from(SessionTable).where(eq(SessionTable.id, sessionID)).get()).toMatchObject({ cost: 0 })
   }),
 )
+
+it.effect("logs a finish snapshot when the provider finishes without any output", () => {
+  const logs: Array<Record<string, unknown>> = []
+  const logger = Logger.map(Logger.formatStructured, (entry) => {
+    if (!Array.isArray(entry.message) || entry.message[0] !== "provider finished the step without any output") return
+    const details = entry.message[1]
+    if (typeof details === "object" && details !== null) logs.push(details as Record<string, unknown>)
+  })
+  return Effect.gen(function* () {
+    const db = (yield* Database.Service).db
+    const llm = yield* TestLLM.Test
+    const sessionID = Session.ID.create()
+    const assistantMessageID = SessionMessage.ID.create()
+    const steps = yield* SessionStep.make.pipe(
+      Effect.provide(
+        Layer.mock(Snapshot.Service)({
+          capture: () => Effect.succeed(undefined),
+          files: () => Effect.succeed([]),
+        }),
+      ),
+    )
+    yield* db
+      .insert(ProjectTable)
+      .values({ id: Project.ID.global, worktree: AbsolutePath.make("/project"), sandboxes: [] })
+      .run()
+    yield* db
+      .insert(SessionTable)
+      .values({ id: sessionID, project_id: Project.ID.global, slug: "step", directory: "/project", version: "test" })
+      .run()
+    const model = SessionRunnerModel.resolved(
+      LanguageModel.make({ id: "test-model", provider: "test", route: OpenAIChat.route }),
+      {
+        capabilities: { tools: true, input: ["text"], output: ["text"] },
+        limit: { context: 100_000, output: 1_000 },
+        cost: [
+          {
+            input: Money.USDPerMillionTokens.make(1),
+            output: Money.USDPerMillionTokens.make(2),
+            cache: { read: Money.USDPerMillionTokens.zero, write: Money.USDPerMillionTokens.zero },
+          },
+        ],
+      },
+    )
+    yield* llm.push(
+      TestLLM.complete({
+        reason: { normalized: "stop", raw: "stop" },
+        usage: { inputTokens: 10, outputTokens: 0, nonCachedInputTokens: 10 },
+      }),
+    )
+    const result = yield* steps
+      .attempt({
+        isLocationClosed: () => false,
+        sessionID,
+        assistantMessageID,
+        agent: Agent.defaultID,
+        model,
+        prepared: {
+          retry: () => Effect.void,
+          request: ai.request({ model: model.model, prompt: "Hello" }),
+          options: {},
+          executeTool: () => Effect.die("no tools"),
+        },
+        retry: () => Effect.succeed({ retry: false }),
+        recoverContinuation: true,
+        recoverOverflow: Effect.succeed(false),
+      })
+      .pipe(Effect.exit)
+    // The outcome is unchanged: the step still completes on the empty response.
+    expect(Exit.isSuccess(result)).toBe(true)
+    expect(logs).toHaveLength(1)
+    expect(logs[0]).toMatchObject({
+      classification: "incomplete-stream",
+      sessionID,
+      assistantMessageID,
+      finish: "stop",
+      rawFinish: "stop",
+    })
+  }).pipe(Effect.provide(Logger.layer([logger])))
+})
