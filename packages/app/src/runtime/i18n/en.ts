@@ -846,6 +846,9 @@ export const dict = {
     "Fold your messages past 12 lines behind a Read more button",
   "settings.experimental.row.newQuestionUI.title": "New question UI",
   "settings.experimental.row.newQuestionUI.description": "Preview the keyboard-first question dock",
+  "settings.experimental.row.infiniteRetry.title": "Retry failures indefinitely",
+  "settings.experimental.row.infiniteRetry.description":
+    "Keep retrying provider failures at a steady 30-second interval after the initial backoff instead of stopping after ten attempts",
   "settings.experimental.row.sidebarOrganize.title": "Organize vertical sidebar",
   "settings.experimental.row.sidebarOrganize.description":
     "Group side tabs by project or show one list. Only applies to side tabs.",

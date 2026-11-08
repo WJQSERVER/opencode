@@ -95,6 +95,46 @@ const provider = {
 }
 
 describe("Config", () => {
+  it.live("patches experimental fields in the global config without touching unrelated content", () =>
+    Effect.acquireDisposable(Effect.promise(() => tmpdir())).pipe(
+      Effect.flatMap((tmp) => {
+        const global = path.join(tmp.path, "global")
+        const file = path.join(global, "opencode.json")
+        return Effect.promise(() =>
+          fs.mkdir(global, { recursive: true }).then(() =>
+            fs.writeFile(file, JSON.stringify({ model: "x", shell: "bash" }, null, 2)),
+          ),
+        ).pipe(
+          Effect.andThen(
+            Effect.gen(function* () {
+              const config = yield* Config.Service
+
+              yield* config.update!({ infinite_retry: true })
+              const first = JSON.parse(yield* Effect.promise(() => fs.readFile(file, "utf8")))
+              expect(first).toEqual({ model: "x", shell: "bash", experimental: { infinite_retry: true } })
+
+              yield* config.update!({ shell: null })
+              const second = JSON.parse(yield* Effect.promise(() => fs.readFile(file, "utf8")))
+              expect(second).toEqual({
+                model: "x",
+                shell: null,
+                experimental: { infinite_retry: true },
+              })
+
+              yield* config.update!({ infinite_retry: false })
+              const third = JSON.parse(yield* Effect.promise(() => fs.readFile(file, "utf8")))
+              expect(third).toEqual({
+                model: "x",
+                shell: null,
+                experimental: { infinite_retry: false },
+              })
+            }).pipe(Effect.provide(testLayer(tmp.path, global))),
+          ),
+        )
+      }),
+    ),
+  )
+
   it.live("excludes home-level claude and agents directories when global is disabled", () =>
     Effect.acquireDisposable(Effect.promise(() => tmpdir())).pipe(
       Effect.flatMap((tmp) => {

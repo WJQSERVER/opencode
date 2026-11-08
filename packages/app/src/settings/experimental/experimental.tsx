@@ -1,17 +1,20 @@
 import { Component } from "solid-js"
 import { Switch } from "@opencode/ui/switch"
 import { Select } from "@opencode/ui/select"
+import type { ServerConnection } from "@/runtime/server/registry"
 import { useLanguage } from "@/runtime/i18n/language"
 import { SettingsList } from "@/settings/list"
 import { useSettings } from "@/settings/model"
 import { SettingsRow } from "@/settings/row"
+import { createServerInfiniteRetryController } from "@/settings/general/controllers"
 import "@/settings/settings.css"
 
 export const experimentalSettingsAvailable = true
 
-export const SettingsExperimental: Component = () => {
+export const SettingsExperimental: Component<{ server?: ServerConnection.Any }> = (props) => {
   const language = useLanguage()
   const settings = useSettings()
+  const infiniteRetry = createServerInfiniteRetryController(() => props.server)
 
   return (
     <>
@@ -77,6 +80,14 @@ export const SettingsExperimental: Component = () => {
                 >
                   {language.t("settings.experimental.row.newQuestionUI.title")}
                 </Switch>
+              </div>
+            </SettingsRow>
+            <SettingsRow
+              title={language.t("settings.experimental.row.infiniteRetry.title")}
+              description={language.t("settings.experimental.row.infiniteRetry.description")}
+            >
+              <div data-action="settings-infinite-retry">
+                <Switch checked={infiniteRetry.current()} onChange={infiniteRetry.select} />
               </div>
             </SettingsRow>
           </SettingsList>

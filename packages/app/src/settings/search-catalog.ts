@@ -133,6 +133,13 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     keywords: "vertical side tabs projects recents organize sidebar",
   },
   {
+    tab: "experimental",
+    label: "settings.experimental.row.infiniteRetry.title",
+    target: "settings-infinite-retry",
+    description: "settings.experimental.row.infiniteRetry.description",
+    keywords: "retry failures provider backoff attempts infinite",
+  },
+  {
     tab: "appearance",
     label: "settings.general.row.colorScheme.title",
     target: "settings-color-scheme",

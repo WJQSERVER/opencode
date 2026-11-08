@@ -98,6 +98,51 @@ export function createOptimisticSetting<T, M, S>(options: {
   }
 }
 
+export function createServerInfiniteRetryController(server: Accessor<ServerConnection.Any | undefined>) {
+  const language = useLanguage()
+
+  const setting = createOptimisticSetting({
+    source: useServerCtx(server),
+    initial: false,
+    initialMeta: undefined,
+    load: async (context) => {
+      const entries = await context.sdk.api.config.get().catch(() => [])
+
+      const boundary = entries.findIndex((entry) => entry.type === "directory")
+      const global = boundary === -1 ? entries : entries.slice(0, boundary)
+
+      return {
+        meta: undefined,
+        value:
+          global
+            .flatMap((entry) =>
+              entry.type === "document" && entry.info.experimental?.infinite_retry !== undefined
+                ? [entry.info.experimental.infinite_retry]
+                : [],
+            )
+            .at(-1) ?? false,
+      }
+    },
+    write: async (value, context) => {
+      await context.sdk.api.experimental.config.update({ infinite_retry: value })
+    },
+    onError: (failure) =>
+      showToast({
+        variant: "error",
+        title: language.t("common.requestFailed"),
+        description:
+          failure.kind === "timeout"
+            ? language.t("home.sessions.load.timeout")
+            : failure.message || language.t("common.requestFailed"),
+      }),
+  })
+
+  return {
+    current: setting.value,
+    select: setting.select,
+  }
+}
+
 export function createServerShellController(server: Accessor<ServerConnection.Any>) {
   const language = useLanguage()
 

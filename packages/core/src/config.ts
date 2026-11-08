@@ -475,13 +475,18 @@ export const layer = (options?: Options) =>
             (yield* Effect.filter(candidates, fs.isFile)).at(-1) ?? path.join(directory, "opencode.jsonc")
           const text = (yield* fs.readFileStringSafe(filepath)) ?? "{}\n"
           const updated = yield* Effect.try({
-            try: () =>
-              applyEdits(
-                text,
-                modify(text, ["shell"], patch.shell ?? undefined, {
-                  formattingOptions: { tabSize: 2, insertSpaces: true },
-                }),
-              ),
+            try: () => {
+              const formatting = { formattingOptions: { tabSize: 2, insertSpaces: true } }
+              let document = text
+              if (patch.shell !== undefined)
+                document = applyEdits(document, modify(document, ["shell"], patch.shell, formatting))
+              if (patch.infinite_retry !== undefined)
+                document = applyEdits(
+                  document,
+                  modify(document, ["experimental", "infinite_retry"], patch.infinite_retry, formatting),
+                )
+              return document
+            },
             catch: (cause) => new FSUtil.FileSystemError({ method: "config.update", cause }),
           })
           yield* fs.writeWithDirs(filepath, updated.endsWith("\n") ? updated : `${updated}\n`)
