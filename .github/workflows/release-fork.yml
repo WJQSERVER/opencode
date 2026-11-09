@@ -17,7 +17,7 @@ on:
         description: "Channel; also the npm dist-tag"
         required: false
         type: string
-        default: "wjq"
+        default: "latest"
       targets:
         description: "Comma-separated build targets"
         required: false
@@ -46,7 +46,7 @@ defaults:
     shell: bash
 
 env:
-  OPENCODE_CHANNEL: ${{ inputs.channel || 'wjq' }}
+  OPENCODE_CHANNEL: ${{ inputs.channel || 'latest' }}
   OPENCODE_RELEASE: false
   OPENCODE_MODELS_URL: https://models.dev
 
@@ -156,7 +156,7 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           VERSION: ${{ needs.plan.outputs.version }}
-          TAG: ${{ inputs.channel || 'wjq' }}
+          TAG: ${{ inputs.channel || 'latest' }}
         # Platform packages publish before the wrapper: the wrapper's optionalDependencies resolve
         # against them. An already-published version is skipped so re-runs stay idempotent.
         run: |
