@@ -576,6 +576,18 @@ export namespace Timeline {
       appendGroups(before)
 
       if (interruptedAt >= 0) {
+        const interrupted = messages[interruptedAt]
+        // The turn continued in a later step, so this step reads as settled: surface its
+        // retry state here with the same timeline row the live retry uses.
+        if (interrupted?.retry)
+          rows.push(
+            new TimelineRow.Retry({
+              userMessageID: turnID,
+              attempt: interrupted.retry.attempt,
+              message: interrupted.retry.error.message,
+              next: interrupted.retry.at,
+            }),
+          )
         if (!compaction && detail?.notices.placement !== "hidden")
           rows.push(new TimelineRow.TurnDivider({ userMessageID: turnID }))
         appendGroups(after)

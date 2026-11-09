@@ -787,6 +787,34 @@ describe("current session timeline rows", () => {
     expect(result.rows.map((row) => row._tag)).toEqual(["UserMessage", "Retry"])
   })
 
+  test("keeps the retry card for an interrupted provider output across a continuation", () => {
+    const source = [
+      { id: "msg_user", type: "user", text: "ping", time: { created: 1 } },
+      {
+        id: "msg_interrupted",
+        type: "assistant",
+        agent: "build",
+        model: { id: "model", providerID: "provider" },
+        content: [{ type: "text", text: "partial" }],
+        error: { type: "provider.invalid-output", message: "OpenAI Chat stream ended without finish_reason" },
+        retry: { attempt: 2, at: 10, error: { type: "provider.invalid-output", message: "OpenAI Chat stream ended without finish_reason" } },
+        time: { created: 2, completed: 3 },
+      },
+      {
+        id: "msg_continuation",
+        type: "assistant",
+        agent: "build",
+        model: { id: "model", providerID: "provider" },
+        content: [{ type: "text", text: "recovered" }],
+        time: { created: 4, completed: 5 },
+      },
+    ] satisfies SessionMessageInfo[]
+
+    const result = Timeline.constructSessionMessageRows(source, true, { type: "busy" })
+
+    expect(result.rows.map((row) => row._tag)).toEqual(["UserMessage", "AssistantPart", "Retry", "TurnDivider", "AssistantPart"])
+  })
+
   test("removes a failed assistant error when the turn continues streaming", () => {
     const source = [
       { id: "msg_user", type: "user", text: "recover", time: { created: 1 } },

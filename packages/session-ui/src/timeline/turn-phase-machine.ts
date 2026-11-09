@@ -101,10 +101,19 @@ export function sameTurnPhase(a: TurnPhase, b: TurnPhase) {
   return a.status === b.status
 }
 
+/**
+ * An assistant error the reader can see as not final: the provider cut the
+ * response short (invalid output, stream ended without finish_reason) or the
+ * turn was aborted/interrupted. These errors name an interrupted attempt,
+ * not a terminal failure the model chose to end with.
+ */
 export function isInterruptedError(error: { readonly type: string } | undefined) {
   const type = error?.type.toLowerCase()
 
-  return !!type && (type.includes("abort") || type.includes("interrupt"))
+  return (
+    !!type &&
+    (type.includes("abort") || type.includes("interrupt") || type.includes("invalid-output"))
+  )
 }
 
 export function sameRef(a: PartRef | undefined, b: PartRef | undefined) {
