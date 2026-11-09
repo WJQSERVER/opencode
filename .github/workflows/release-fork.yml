@@ -80,10 +80,12 @@ jobs:
           # Tag runs carry no inputs: the tag name is the version, and it must sit on master's history.
           if [ "$REF_TYPE" = "tag" ]; then
             version="${REF_NAME#v}"
-            git branch -r --contains "$GITHUB_SHA" | grep -qx "origin/master" || {
-              echo "tag $REF_NAME is not on master's history" >&2
+            commit=$(git rev-parse --verify "${GITHUB_SHA}^{commit}" 2>/dev/null || echo "$GITHUB_SHA")
+            if ! git merge-base --is-ancestor "$commit" refs/remotes/origin/master; then
+              echo "tag $REF_NAME ($commit) is not on master's history" >&2
+              git branch -r --contains "$commit" >&2 || true
               exit 1
-            }
+            fi
           else
             version="${VERSION_INPUT#v}"
           fi
