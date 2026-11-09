@@ -19,8 +19,11 @@ export function make(input: Partial<Info> = {}): Info {
   }
 }
 
+// A fork revision (2.2.6-u2) never reaches the wire: requests identify as the official release the
+// fork builds on, so providers see the same user agent an official build sends. This mirrors the
+// strip in packages/cli/script/build.ts, which bakes the default UA into the binary.
 export function useragent(app: Info) {
-  return `opencode/${app.channel}/${app.version}/${app.name}`
+  return `opencode/${app.channel}/${app.version.replace(/-u\d+$/, "")}/${app.name}`
 }
 
 export const layer = (input?: Partial<Info>) => Layer.succeed(Service, make(input))

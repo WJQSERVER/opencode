@@ -200,7 +200,8 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
       outfile: path.join(outdir, name, "bin", binary),
       execArgv: [
         "--smol",
-        `--user-agent=opencode/${Script.channel}/${Script.version}/cli`,
+        // Keep the default UA identical to official builds: strip the fork revision (see App.useragent).
+        `--user-agent=opencode/${Script.channel}/${Script.version.replace(/-u\d+$/, "")}/cli`,
         "--use-system-ca",
         "--no-warnings",
         "--",
