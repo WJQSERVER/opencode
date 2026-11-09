@@ -1,0 +1,163 @@
+name: fork release
+run-name: "fork release ${{ inputs.version || 'preview' }}"
+
+# Independent release pipeline for this fork. Upstream's release.yml is bound to
+# anomalyco/opencode (signing, R2, attestation); this one builds, attaches binaries to a
+# GitHub release, and optionally publishes the fork's npm packages under @wjqserver/*.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (e.g. 2.2.6-wjq.1); empty derives a preview version"
+        required: false
+        type: string
+      channel:
+        description: "Channel; also the npm dist-tag"
+        required: false
+        type: string
+        default: "wjq"
+      targets:
+        description: "Comma-separated build targets"
+        required: false
+        type: string
+        default: "linux-x64"
+      create_release:
+        description: "Attach binaries to a GitHub release"
+        required: false
+        type: boolean
+        default: true
+      publish_npm:
+        description: "Publish the npm packages (requires NPM_TOKEN secret)"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.inputs.version }}-${{ github.event.inputs.targets }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  OPENCODE_CHANNEL: ${{ inputs.channel || 'wjq' }}
+  OPENCODE_VERSION: ${{ inputs.version }}
+  OPENCODE_RELEASE: false
+  OPENCODE_MODELS_URL: https://models.dev
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build targets
+        run: |
+          targets="${{ inputs.targets || 'linux-x64' }}"
+          # Each invocation clears its --outdir, so targets build into separate trees and are
+          # collected below into the single dist/ root that pack expects.
+          for target in $(echo "$targets" | tr ',' ' '); do
+            echo "building $target"
+            packages/cli/script/build.ts --outdir="dist-build/$target"
+            mv "packages/cli/dist-build/$target/opencode-$target" "packages/cli/dist/"
+          done
+
+      - name: Pack npm packages and archives
+        run: packages/cli/script/pack.ts
+
+      - id: version
+        name: Resolve release version
+        run: |
+          version=$(jq -r .version "packages/cli/dist/@wjqserver/opencode/package.json")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          case "$version" in 0.0.0-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;; *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;; esac
+
+      - name: Write checksums
+        run: |
+          cd dist
+          sha256sum archives/* npm/*.tgz > checksums.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: |
+            dist/archives/
+            dist/npm/
+            dist/checksums.txt
+
+  release:
+    if: ${{ inputs.create_release }}
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+        run: |
+          flags=()
+          [ "$PRERELEASE" = true ] && flags+=(--prerelease)
+          gh release create "$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "opencode $VERSION" \
+            --generate-notes \
+            "${flags[@]}" archives/* npm/*.tgz checksums.txt
+
+  publish-npm:
+    if: ${{ inputs.publish_npm }}
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: Publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ needs.build.outputs.version }}
+          TAG: ${{ inputs.channel || 'wjq' }}
+        # Platform packages publish before the wrapper: the wrapper's optionalDependencies resolve
+        # against them. An already-published version is skipped so re-runs stay idempotent.
+        run: |
+          printf 'registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n' > "$RUNNER_TEMP/npmrc"
+          export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/npmrc"
+          shopt -s nullglob
+          publish() {
+            local file=$1
+            local name
+            name=$(tar -xzOf "$file" package/package.json | jq -r .name)
+            if npm view "$name@$VERSION" version > /dev/null 2>&1; then
+              echo "already published $name@$VERSION"
+              return
+            fi
+            npm publish "$file" --tag "$TAG" --access public --ignore-scripts
+          }
+          wrappers=()
+          platforms=()
+          for file in npm/*.tgz; do
+            name=$(tar -xzOf "$file" package/package.json | jq -r .name)
+            if [ "$name" = "@wjqserver/opencode" ]; then wrappers+=("$file"); else platforms+=("$file"); fi
+          done
+          for file in "${platforms[@]}"; do publish "$file"; done
+          for file in "${wrappers[@]}"; do publish "$file"; done

@@ -21,16 +21,16 @@ await packDistribution({
   command: "opencode",
   legacyCommand: "opencode2",
   binary: "opencode",
-  packagePrefix: "@opencode/cli-",
+  packagePrefix: "@wjqserver/opencode-",
   archive: (target) => target.startsWith("linux-"),
 })
 if (existsSync(path.join(root, "node"))) {
   await packDistribution({
     root: path.join(root, "node"),
-    name: "@opencode/cli-node",
+    name: "@wjqserver/opencode-node",
     command: "opencode2-node",
     binary: "opencode2-node",
-    packagePrefix: "@opencode/cli-node-",
+    packagePrefix: "@wjqserver/opencode-node-",
     archive: () => true,
   })
 }
@@ -91,18 +91,15 @@ async function packDistribution(input: {
     ),
   )
 
-  await Promise.all(Object.keys(binaries).map((name) => pack(`${input.root}/${name.replace("@opencode/", "")}`)))
+  const scope = input.packagePrefix.slice(0, input.packagePrefix.indexOf("/") + 1)
+  await Promise.all(Object.keys(binaries).map((name) => pack(`${input.root}/${name.replace(scope, "")}`)))
   await pack(`${input.root}/${input.name}`)
   await Promise.all(
     Object.keys(binaries)
       .map((name) => name.slice(input.packagePrefix.length))
       .filter(input.archive)
       .map((target) =>
-        archive(
-          path.join(input.root, `${input.packagePrefix.replace("@opencode/", "")}${target}`, "bin"),
-          target,
-          input.binary,
-        ),
+        archive(path.join(input.root, `${input.packagePrefix.replace(scope, "")}${target}`, "bin"), target, input.binary),
       ),
   )
 }

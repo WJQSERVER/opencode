@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@opencode/cli",
+  "name": "@wjqserver/opencode",
   "version": "2.2.5",
   "type": "module",
   "license": "MIT",
@@ -84,7 +84,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/anomalyco/opencode.git",
+    "url": "git+https://github.com/WJQSERVER/opencode.git",
     "directory": "packages/cli"
   }
 }

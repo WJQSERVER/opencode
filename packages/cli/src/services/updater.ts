@@ -150,7 +150,8 @@ const make = Effect.gen(function* () {
       .readFileString(path.join(directory, "package.json"))
       .pipe(Effect.flatMap((text) => Effect.try(() => JSON.parse(text))))
     // Source invocations run inside Bun or Node, which may themselves be npm packages.
-    if (!/^@opencode(?:-ai)?\/cli(?:-node)?$/.test(manifest.name)) return
+    if (!/^@opencode(?:-ai)?\/cli(?:-node)?$/.test(manifest.name) && !manifest.name.startsWith("@wjqserver/opencode"))
+      return
     if (Object.values(manifest.bin ?? {}).some((bin) => path.resolve(directory, bin) === executable))
       return manifest.name
   }).pipe(Effect.orElseSucceed(() => undefined))
@@ -423,6 +424,16 @@ const make = Effect.gen(function* () {
   }
 
   const upgrade = Effect.fnUntraced(function* (method: Method, input: string) {
+    // The update service only knows upstream packages, so an upgrade from a fork install would
+    // silently replace the fork with upstream builds. The fork updates through its own npm scope.
+    if (installedPackage?.startsWith("@wjqserver/"))
+      return yield* Effect.fail(
+        new UpgradeError({
+          title: "OpenCode upgrades are managed by the WJQSERVER fork",
+          detail: "Update with: npm install -g @wjqserver/opencode@latest",
+          retry: "Install updates through the fork's release workflow or npm.",
+        }),
+      )
     if (!parseReleaseVersion(input)) return yield* Effect.fail(new Error(`Invalid version: ${input}`))
     const version = input.trim().replace(/^v/, "")
     const packageName =
