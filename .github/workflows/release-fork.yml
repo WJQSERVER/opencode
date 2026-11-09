@@ -206,7 +206,8 @@ jobs:
           fi
 
   publish-npm:
-    if: ${{ inputs.publish_npm }}
+    # Tag runs always publish their packages; dispatch runs opt in.
+    if: ${{ inputs.publish_npm || github.ref_type == 'tag' }}
     needs: [plan, build]
     permissions:
       contents: read
