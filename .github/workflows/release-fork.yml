@@ -120,13 +120,15 @@ jobs:
       - name: Build targets
         run: |
           targets="${{ inputs.targets || 'linux-x64' }}"
+          mkdir -p packages/cli/dist
           # Each invocation clears its --outdir, so targets build into separate trees and are
           # collected below into the single dist/ root that pack expects.
           for target in $(echo "$targets" | tr ',' ' '); do
             echo "building $target"
-            packages/cli/script/build.ts --outdir="dist-build/$target"
+            OPENCODE_TARGET="$target" packages/cli/script/build.ts --outdir="dist-build/$target"
             mv "packages/cli/dist-build/$target/opencode-$target" "packages/cli/dist/"
           done
+          ls -1 packages/cli/dist
 
       - name: Pack npm packages and archives
         run: packages/cli/script/pack.ts
