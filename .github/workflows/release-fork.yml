@@ -190,22 +190,29 @@ jobs:
   publish-npm:
     if: ${{ inputs.publish_npm }}
     needs: [plan, build]
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: release
 
+      # Trusted publishing (OIDC) needs npm 11.5.1 or later, which Node 24 bundles.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
       - name: Publish
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           VERSION: ${{ needs.plan.outputs.version }}
           TAG: ${{ inputs.channel || 'latest' }}
-        # Platform packages publish before the wrapper: the wrapper's optionalDependencies resolve
-        # against them. An already-published version is skipped so re-runs stay idempotent.
+        # The packages' trusted publisher (npmjs.com: Settings → Trusted Publisher) authorizes this
+        # workflow: the CLI exchanges the job's OIDC token for a short-lived publish credential, no
+        # long-lived token, and provenance is generated automatically. An already-published version
+        # is skipped so re-runs stay idempotent. Platform packages publish before the wrapper.
         run: |
-          printf 'registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n' > "$RUNNER_TEMP/npmrc"
-          export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/npmrc"
           shopt -s nullglob
           publish() {
             local file=$1
