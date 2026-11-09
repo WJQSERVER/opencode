@@ -215,7 +215,8 @@ jobs:
               echo "already published $name@$VERSION"
               return
             fi
-            npm publish "$file" --tag "$TAG" --access public --ignore-scripts
+            # npm only treats a path as a tarball with the ./ prefix; a bare relative path reads as a package spec.
+            npm publish "./$file" --tag "$TAG" --access public --ignore-scripts
           }
           wrappers=()
           platforms=()
