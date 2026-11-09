@@ -3,6 +3,7 @@ import * as NodeSink from "@effect/platform-node/NodeSink"
 import * as NodeStream from "@effect/platform-node/NodeStream"
 import {
   Deferred,
+  Duration,
   Effect,
   Exit,
   FileSystem,
@@ -34,6 +35,33 @@ import { Teardown } from "./teardown.js"
 
 /** Closing a child's scope escalates to SIGKILL after this, unless the command sets its own `forceKillAfter`. */
 export const RELEASE_FORCE_KILL_AFTER = "3 seconds"
+
+/**
+ * How long to wait for `exit`/`close` after SIGKILL is issued before the child is treated as
+ * unobservable. A child in uninterruptible sleep (D-state) never reports either event, so the
+ * kill alone would hold every waiter forever — after this grace the caller fabricates the
+ * terminal state through `raceAbandon` instead of waiting.
+ */
+export const ABANDON_AFTER = "5 seconds"
+
+/**
+ * Race `wait` against `grace`. Waiting wins normally; on expiry the wait is interrupted, `abandon`
+ * runs and the returned effect succeeds with `void`. Timed-out children are never observed
+ * terminating, so the caller stops waiting at exactly the abandon point.
+ */
+export const raceAbandon = <A, E, R>(
+  wait: Effect.Effect<A, E, R>,
+  grace: Duration.Input,
+  abandon: Effect.Effect<void, E, R>,
+): Effect.Effect<void, E, R> =>
+  Effect.raceFirst(
+    wait.pipe(Effect.asVoid),
+    Effect.sleep(grace).pipe(Effect.andThen(abandon)),
+  )
+
+// A process that never reported exit is indistinguishable from one that died by SIGKILL — the signal
+// was delivered, only the observation is missing.
+const UNOBSERVED: readonly [number | null, NodeJS.Signals | null] = [null, "SIGKILL"]
 
 // Process groups of running children. Exiting without stopping them (a shutdown deadline, a second signal, a
 // crash) would orphan them, so a synchronous exit hook kills whatever is left.
@@ -500,14 +528,29 @@ const makeCrossSpawnSpawner = Effect.gen(function* () {
     command: ChildProcess.StandardCommand,
     proc: NodeChildProcess.ChildProcess,
     closed: ExitSignal,
+    exited: ExitSignal,
     stopOutput: Deferred.Deferred<void>,
     opts: ChildProcess.KillOptions | undefined,
   ) => {
+    // Abandon the wait on an unobservable child: fabricate the terminal state every waiter hangs off
+    // of — first writer wins, so if a real exit raced in we keep pid tracking and pipes intact.
+    const abandon = Effect.gen(function* () {
+      if (!Deferred.doneUnsafe(exited, Exit.succeed(UNOBSERVED))) return
+      Deferred.doneUnsafe(closed, Exit.succeed(UNOBSERVED))
+      groups.delete(proc.pid!)
+      discard(proc.stdout)
+      discard(proc.stderr)
+      yield* Deferred.succeed(stopOutput, undefined)
+    }).pipe(Effect.asVoid)
     const terminate = (signal: NodeJS.Signals) =>
       Effect.catch(killGroup(command, proc, signal), () => killOne(command, proc, signal)).pipe(
         Effect.andThen(
           signal === "SIGKILL"
-            ? Effect.raceFirst(Deferred.await(closed), Deferred.await(stopOutput))
+            ? raceAbandon(
+                Effect.raceFirst(Deferred.await(closed), Deferred.await(stopOutput)),
+                ABANDON_AFTER,
+                abandon,
+              )
             : Deferred.await(closed),
         ),
         Effect.asVoid,
@@ -575,7 +618,7 @@ const makeCrossSpawnSpawner = Effect.gen(function* () {
                   }
                 }
                 yield* Effect.ignore(
-                  stop(command, proc, closed, stopOutput, {
+                  stop(command, proc, closed, exited, stopOutput, {
                     killSignal: command.options.killSignal,
                     forceKillAfter: command.options.forceKillAfter ?? RELEASE_FORCE_KILL_AFTER,
                   }),
@@ -619,7 +662,7 @@ const makeCrossSpawnSpawner = Effect.gen(function* () {
               // Node reports a signal whenever the exit code is null.
               return Effect.fail(toPlatformError("exitCode", new KilledBySignal(signal!), command))
             }),
-            kill: (opts?: ChildProcess.KillOptions) => stop(command, proc, closed, stopOutput, opts),
+            kill: (opts?: ChildProcess.KillOptions) => stop(command, proc, closed, exited, stopOutput, opts),
             unref: Effect.sync(() => {
               if (ref) {
                 proc.unref()
