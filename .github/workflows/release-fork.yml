@@ -1,14 +1,16 @@
 name: fork release
-run-name: "fork release ${{ inputs.version || 'preview' }}"
+run-name: "fork release ${{ inputs.version || 'official latest' }}"
 
 # Independent release pipeline for this fork. Upstream's release.yml is bound to
 # anomalyco/opencode (signing, R2, attestation); this one builds, attaches binaries to a
 # GitHub release, and optionally publishes the fork's npm packages under @wjqserver/*.
+# Versions follow the official releases: the version must be an official @opencode/cli
+# release (empty input takes the latest), and the release tag uses the official `v` prefix.
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version (e.g. 2.2.6-wjq.1); empty derives a preview version"
+        description: "Official upstream version to release (e.g. 2.2.6); empty = latest official"
         required: false
         type: string
       channel:
@@ -45,16 +47,40 @@ defaults:
 
 env:
   OPENCODE_CHANNEL: ${{ inputs.channel || 'wjq' }}
-  OPENCODE_VERSION: ${{ inputs.version }}
   OPENCODE_RELEASE: false
   OPENCODE_MODELS_URL: https://models.dev
 
 jobs:
-  build:
+  plan:
     runs-on: ubuntu-24.04
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      prerelease: ${{ steps.version.outputs.prerelease }}
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+      prerelease: ${{ steps.plan.outputs.prerelease }}
+    steps:
+      - id: plan
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          version="${VERSION_INPUT#v}"
+          if [ -z "$version" ]; then
+            version=$(npm view @opencode/cli version)
+            echo "releasing the latest official version: $version"
+          elif [ "$(npm view "@opencode/cli@$version" version 2>/dev/null || true)" != "$version" ]; then
+            echo "version $version is not an official release; dispatch without a version to use the latest official one" >&2
+            exit 1
+          else
+            echo "releasing official version: $version"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          case "$version" in *-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;; *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;; esac
+
+  build:
+    needs: plan
+    runs-on: ubuntu-24.04
+    env:
+      OPENCODE_VERSION: ${{ needs.plan.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -79,13 +105,6 @@ jobs:
       - name: Pack npm packages and archives
         run: packages/cli/script/pack.ts
 
-      - id: version
-        name: Resolve release version
-        run: |
-          version=$(jq -r .version "packages/cli/dist/@wjqserver/opencode/package.json")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          case "$version" in 0.0.0-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;; *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;; esac
-
       - name: Write checksums
         run: |
           cd dist
@@ -101,7 +120,7 @@ jobs:
 
   release:
     if: ${{ inputs.create_release }}
-    needs: build
+    needs: [plan, build]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
@@ -111,21 +130,22 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.build.outputs.version }}
-          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+          VERSION: ${{ needs.plan.outputs.version }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          PRERELEASE: ${{ needs.plan.outputs.prerelease }}
         run: |
           flags=()
           [ "$PRERELEASE" = true ] && flags+=(--prerelease)
-          gh release create "$VERSION" \
+          gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "opencode $VERSION" \
+            --title "opencode $TAG" \
             --generate-notes \
             "${flags[@]}" archives/* npm/*.tgz checksums.txt
 
   publish-npm:
     if: ${{ inputs.publish_npm }}
-    needs: build
+    needs: [plan, build]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
@@ -135,7 +155,7 @@ jobs:
       - name: Publish
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          VERSION: ${{ needs.build.outputs.version }}
+          VERSION: ${{ needs.plan.outputs.version }}
           TAG: ${{ inputs.channel || 'wjq' }}
         # Platform packages publish before the wrapper: the wrapper's optionalDependencies resolve
         # against them. An already-published version is skipped so re-runs stay idempotent.
