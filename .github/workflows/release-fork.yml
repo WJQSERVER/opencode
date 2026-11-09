@@ -3,10 +3,10 @@ run-name: "fork release ${{ github.ref_type == 'tag' && github.ref_name || input
 
 # Independent release pipeline for this fork. Upstream's release.yml is bound to
 # anomalyco/opencode (signing, R2, attestation); this one builds, attaches binaries to a
-# GitHub release, and optionally publishes the fork's npm packages under @wjqserver/*.
-# Versions follow the official releases: the version must be an official @opencode/cli
-# release (a manual run with no version takes the latest), and the release tag uses the
-# official `v` prefix. Pushing a `v*` tag whose commit is on master cuts that release.
+# GitHub release, and publishes the fork's npm packages under @wjqserver/* through trusted
+# publishing (OIDC). The version must derive from an official @opencode/cli release: a plain
+# name must be one, and a fork revision suffix (v2.2.6u1) becomes the semver prerelease
+# 2.2.6-u1 over official 2.2.6. Pushing such a tag on master cuts the release.
 on:
   # Tags on master cut a release: the tag name is the verified official version.
   push:
@@ -79,7 +79,7 @@ jobs:
         run: |
           # Tag runs carry no inputs: the tag name is the version, and it must sit on master's history.
           if [ "$REF_TYPE" = "tag" ]; then
-            version="${REF_NAME#v}"
+            name="${REF_NAME#v}"
             commit=$(git rev-parse --verify "${GITHUB_SHA}^{commit}" 2>/dev/null || echo "$GITHUB_SHA")
             if ! git merge-base --is-ancestor "$commit" refs/remotes/origin/master; then
               echo "tag $REF_NAME ($commit) is not on master's history" >&2
@@ -87,19 +87,37 @@ jobs:
               exit 1
             fi
           else
-            version="${VERSION_INPUT#v}"
+            name="${VERSION_INPUT#v}"
           fi
-          if [ -z "$version" ]; then
-            version=$(npm view @opencode/cli version)
-            echo "releasing the latest official version: $version"
-          elif [ "$(npm view "@opencode/cli@$version" version 2>/dev/null || true)" != "$version" ]; then
-            echo "version $version is not an official release; dispatch without a version to use the latest official one" >&2
+          if [ -z "$name" ]; then
+            name=$(npm view @opencode/cli version)
+            echo "releasing the latest official version: $name"
+          fi
+          echo "tag=v$name" >> "$GITHUB_OUTPUT"
+          # A fork revision suffix (v2.2.6u1) becomes a semver prerelease (2.2.6-u1) whose base
+          # must be an official release; plain names must themselves be official releases.
+          core=$(printf '%s' "$name" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || true)
+          suffix=""
+          [ -n "$core" ] && suffix="${name#"$core"}"
+          case "$suffix" in
+            "") version="$name" ;;
+            u[0-9]*) version="$core-${suffix}" ;;
+            *) version="$name" ;;
+          esac
+          case "$suffix" in
+            ""|u[0-9]*) official="$core" ;;
+            *) official="$version" ;;
+          esac
+          [ -n "$official" ] || {
+            echo "version $name does not start with a release version" >&2
             exit 1
-          else
-            echo "releasing official version: $version"
+          }
+          if [ "$(npm view "@opencode/cli@$official" version 2>/dev/null || true)" != "$official" ]; then
+            echo "version $official is not an official release; dispatch without a version to use the latest official one" >&2
+            exit 1
           fi
+          echo "releasing: npm $version, tag v$name (official base $official)"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
           case "$version" in *-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;; *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;; esac
 
   build:
