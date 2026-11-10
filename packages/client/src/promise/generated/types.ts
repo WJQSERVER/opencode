@@ -2552,6 +2552,7 @@ export type ConfigEntry =
           schedules?: boolean
           artifacts?: boolean
           codemode_vm?: boolean
+          shell_timeout_background?: boolean
           console_watches?: boolean
           part_rows?: boolean
           infinite_retry?: boolean
