@@ -38,7 +38,7 @@ export const SettingsExperimental: Component<{ server?: ServerConnection.Any }> 
             >
               <Select
                 data-action="settings-sidebar-organize"
-                options={["list", "projects", "customize"] as const}
+                options={settings.general.sidebarOrganizeOptions}
                 current={settings.general.sidebarOrganize()}
                 label={(mode) => language.t(`settings.experimental.sidebarOrganize.${mode}`)}
                 onSelect={(mode) => mode && settings.general.setSidebarOrganize(mode)}
@@ -66,6 +66,20 @@ export const SettingsExperimental: Component<{ server?: ServerConnection.Any }> 
                   checked={settings.general.foldUserMessages()}
                   onChange={(checked) => settings.general.setFoldUserMessages(checked)}
                 />
+              </div>
+            </SettingsRow>
+            <SettingsRow
+              title={language.t("settings.experimental.row.newTimeline.title")}
+              description={language.t("settings.experimental.row.newTimeline.description")}
+            >
+              <div data-action="settings-new-timeline">
+                <Switch
+                  checked={settings.general.newTimeline()}
+                  onChange={(checked) => settings.general.setNewTimeline(checked)}
+                  hideLabel
+                >
+                  {language.t("settings.experimental.row.newTimeline.title")}
+                </Switch>
               </div>
             </SettingsRow>
             <SettingsRow
