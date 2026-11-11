@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { AIError, ProviderInternalError, TransportError } from "@opencode/ai/effect"
+import { AIError, ProviderInternalError, QuotaExceededError, TransportError } from "@opencode/ai/effect"
 import { ModelRetry } from "@opencode/core/model-retry"
 import { Agent } from "@opencode/schema/agent"
 import { Model } from "@opencode/schema/model"
@@ -31,6 +31,14 @@ const refused = new AIError({
     operation: "request",
     code: "ECONNREFUSED",
   }),
+})
+
+const quota = new AIError({
+  reason: new QuotaExceededError({ message: "OpenCode Go usage limit reached", retryAfterMs: 1_000 }),
+})
+const neverResets = new AIError({ reason: new QuotaExceededError({ message: "OpenCode Go usage limit reached" }) })
+const monthly = new AIError({
+  reason: new QuotaExceededError({ message: "Monthly budget reached", retryAfterMs: 45 * 86_400_000 + 1 }),
 })
 
 const input = (cause: AIError) => ({
@@ -113,6 +121,60 @@ describe("SessionRunnerRetry.policy", () => {
       // The first ten gaps are the jittered backoff capped at 10 seconds; the rest are exactly 30 seconds.
       expect(delays.slice(0, 10).every((delay) => delay < 30_000)).toBe(true)
       expect(delays.slice(10)).toEqual(Array(4).fill(30_000))
+    }),
+  )
+
+  it.effect("gives up on quota refusals by default", () =>
+    Effect.gen(function* () {
+      const policy = yield* SessionRunnerRetry.policy(SessionSchema.ID.make("ses_retry"))
+      expect((yield* policy(input(quota))).retry).toBe(false)
+    }),
+  )
+
+  it.effect("doesn't schedule a reset retry without limit_reset_retry", () =>
+    Effect.gen(function* () {
+      const policy = yield* SessionRunnerRetry.policy(SessionSchema.ID.make("ses_retry"), { infinite: true })
+      expect((yield* policy(input(quota))).retry).toBe(false)
+    }),
+  )
+
+  it.effect("schedules exactly one retry at the reset when limit_reset_retry is enabled", () =>
+    Effect.gen(function* () {
+      const policy = yield* SessionRunnerRetry.policy(SessionSchema.ID.make("ses_retry"), { limitResetRetry: true })
+      const first = yield* policy(input(quota))
+      expect(first).toEqual({ retry: true, attempt: 2, delay: 1_000 })
+      expect((yield* policy(input(quota))).retry).toBe(false)
+    }),
+  )
+
+  it.effect("joins the general retry state machine once the reset time passes", () =>
+    Effect.gen(function* () {
+      const policy = yield* SessionRunnerRetry.policy(SessionSchema.ID.make("ses_retry"), {
+        limitResetRetry: true,
+        infinite: true,
+      })
+      const first = yield* policy(input(quota))
+      expect(first).toEqual({ retry: true, attempt: 2, delay: 1_000 })
+      yield* TestClock.adjust("1500 millis")
+      const second = yield* policy(input(quota))
+      expect(second.retry).toBe(true)
+      if (second.retry) expect(second.delay).toBeLessThanOrEqual(30_000)
+      const third = yield* policy(input(quota))
+      expect(third.retry).toBe(true)
+    }),
+  )
+
+  it.effect("doesn't schedule a reset retry without a reset the provider computed", () =>
+    Effect.gen(function* () {
+      const policy = yield* SessionRunnerRetry.policy(SessionSchema.ID.make("ses_retry"), { limitResetRetry: true })
+      expect((yield* policy(input(neverResets))).retry).toBe(false)
+    }),
+  )
+
+  it.effect("doesn't schedule a reset retry when the reset is beyond the cap", () =>
+    Effect.gen(function* () {
+      const policy = yield* SessionRunnerRetry.policy(SessionSchema.ID.make("ses_retry"), { limitResetRetry: true })
+      expect((yield* policy(input(monthly))).retry).toBe(false)
     }),
   )
 

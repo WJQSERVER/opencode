@@ -871,6 +871,9 @@ export const dict = {
   "settings.experimental.row.forceTokenSpeed.title": "Show tokens per second on every device",
   "settings.experimental.row.forceTokenSpeed.description":
     "Always show the tokens-per-second label in response footers, including on devices without hover support",
+  "settings.experimental.row.limitResetRetry.title": "Retry at the limit reset",
+  "settings.experimental.row.limitResetRetry.description":
+    "When OpenCode refuses requests because a subscription usage limit was reached, try again once at the moment the limit resets instead of stopping",
   "settings.experimental.row.sidebarOrganize.title": "Organize vertical sidebar",
   "settings.experimental.row.sidebarOrganize.description":
     "Choose how sessions are listed in the sidebar. Only applies to side tabs.",

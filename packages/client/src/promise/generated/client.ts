@@ -1737,7 +1737,11 @@ export function make(options: ClientOptions) {
             {
               method: "PATCH",
               path: `/api/experimental/config`,
-              body: { shell: input?.["shell"], infinite_retry: input?.["infinite_retry"] },
+              body: {
+                shell: input?.["shell"],
+                infinite_retry: input?.["infinite_retry"],
+                limit_reset_retry: input?.["limit_reset_retry"],
+              },
               successStatus: 204,
               declaredStatuses: [400, 401, 404],
               empty: true,

@@ -2576,6 +2576,7 @@ export type ConfigEntry =
           mcp_events?: boolean
           part_rows?: boolean
           infinite_retry?: boolean
+          limit_reset_retry?: boolean
           image_generate?: boolean | { model?: string | { providerID: string; model: string; variant?: string } }
           subagent_depth?: number
           location_idle_timeout?: string | false
@@ -4887,6 +4888,7 @@ export type ConfigShellsOutput = Array<ConfigShellOption>
 export type ExperimentalConfigUpdateInput = {
   readonly shell?: string | null | undefined
   readonly infinite_retry?: boolean | undefined
+  readonly limit_reset_retry?: boolean | undefined
 }
 
 export type ExperimentalConfigUpdateOutput = void

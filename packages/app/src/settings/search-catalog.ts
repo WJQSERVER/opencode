@@ -148,6 +148,13 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   },
   {
     tab: "experimental",
+    label: "settings.experimental.row.limitResetRetry.title",
+    target: "settings-limit-reset-retry",
+    description: "settings.experimental.row.limitResetRetry.description",
+    keywords: "retry usage limit reset go quota schedule",
+  },
+  {
+    tab: "experimental",
     label: "settings.experimental.row.forceTokenSpeed.title",
     target: "settings-force-token-speed",
     description: "settings.experimental.row.forceTokenSpeed.description",

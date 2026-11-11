@@ -6,7 +6,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { SettingsList } from "@/settings/list"
 import { useSettings } from "@/settings/model"
 import { SettingsRow } from "@/settings/row"
-import { createServerInfiniteRetryController } from "@/settings/general/controllers"
+import { createServerInfiniteRetryController, createServerLimitResetRetryController } from "@/settings/general/controllers"
 import "@/settings/settings.css"
 
 export const experimentalSettingsAvailable = true
@@ -15,6 +15,7 @@ export const SettingsExperimental: Component<{ server?: ServerConnection.Any }> 
   const language = useLanguage()
   const settings = useSettings()
   const infiniteRetry = createServerInfiniteRetryController(() => props.server)
+  const limitResetRetry = createServerLimitResetRetryController(() => props.server)
 
   return (
     <>
@@ -102,6 +103,14 @@ export const SettingsExperimental: Component<{ server?: ServerConnection.Any }> 
             >
               <div data-action="settings-infinite-retry">
                 <Switch checked={infiniteRetry.current()} onChange={infiniteRetry.select} />
+              </div>
+            </SettingsRow>
+            <SettingsRow
+              title={language.t("settings.experimental.row.limitResetRetry.title")}
+              description={language.t("settings.experimental.row.limitResetRetry.description")}
+            >
+              <div data-action="settings-limit-reset-retry">
+                <Switch checked={limitResetRetry.current()} onChange={limitResetRetry.select} />
               </div>
             </SettingsRow>
             <SettingsRow

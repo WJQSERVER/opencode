@@ -484,6 +484,11 @@ export const layer = (options?: Options) =>
                   document,
                   modify(document, ["experimental", "infinite_retry"], patch.infinite_retry, formatting),
                 )
+              if (patch.limit_reset_retry !== undefined)
+                document = applyEdits(
+                  document,
+                  modify(document, ["experimental", "limit_reset_retry"], patch.limit_reset_retry, formatting),
+                )
               return document
             },
             catch: (cause) => new FSUtil.FileSystemError({ method: "config.update", cause }),

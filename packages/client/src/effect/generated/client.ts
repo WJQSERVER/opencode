@@ -1954,9 +1954,13 @@ const adaptGroupConfig = (raw: RawClient["server.config"]) => ({
 
 const EndpointExperimentalConfigUpdate = (raw: RawClient["server.config"]) => (input?: ExperimentalConfigUpdateInput) =>
   preserveEffect<ExperimentalConfigUpdateOutput>()(
-    raw["config.update"]({ payload: { shell: input?.["shell"], infinite_retry: input?.["infinite_retry"] } }).pipe(
-      Effect.mapError(mapClientError),
-    ),
+    raw["config.update"]({
+      payload: {
+        shell: input?.["shell"],
+        infinite_retry: input?.["infinite_retry"],
+        limit_reset_retry: input?.["limit_reset_retry"],
+      },
+    }).pipe(Effect.mapError(mapClientError)),
   )
 
 const adaptGroupExperimentalConfig = (raw: RawClient["server.config"]) => ({

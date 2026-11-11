@@ -30,6 +30,10 @@ export class Info extends Schema.Class<Info>("ConfigExperimental.Info")({
     description:
       "Keep retrying provider failures indefinitely, settling at a steady 30-second interval after the initial backoff window. Defaults to false.",
   }),
+  limit_reset_retry: Schema.Boolean.pipe(optional).annotate({
+    description:
+      "When a provider refuses a request because a subscription usage limit was reached, schedule one retry for the moment the limit resets instead of stopping the session. Defaults to false.",
+  }),
   image_generate: Schema.Union([
     Schema.Boolean,
     Schema.Struct({

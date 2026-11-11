@@ -250,7 +250,12 @@ const layer = Layer.effect(
           (entry): entry is Document =>
             entry.type === "document" && entry.info.experimental?.infinite_retry !== undefined,
         )?.info.experimental?.infinite_retry === true
-      const retry = yield* SessionRunnerRetry.make(bus, sessionID, { infinite })
+      const limitResetRetry =
+        entries.findLast(
+          (entry): entry is Document =>
+            entry.type === "document" && entry.info.experimental?.limit_reset_retry !== undefined,
+        )?.info.experimental?.limit_reset_retry === true
+      const retry = yield* SessionRunnerRetry.make(bus, sessionID, { infinite, limitResetRetry })
       let initial: SessionContext.Loaded | undefined = first
       let recoverOverflow = true
       let recoverContinuation = true

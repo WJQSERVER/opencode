@@ -109,24 +109,28 @@ describe("Config", () => {
             Effect.gen(function* () {
               const config = yield* Config.Service
 
-              yield* config.update!({ infinite_retry: true })
+              yield* config.update!({ infinite_retry: true, limit_reset_retry: true })
               const first = JSON.parse(yield* Effect.promise(() => fs.readFile(file, "utf8")))
-              expect(first).toEqual({ model: "x", shell: "bash", experimental: { infinite_retry: true } })
+              expect(first).toEqual({
+                model: "x",
+                shell: "bash",
+                experimental: { infinite_retry: true, limit_reset_retry: true },
+              })
 
               yield* config.update!({ shell: null })
               const second = JSON.parse(yield* Effect.promise(() => fs.readFile(file, "utf8")))
               expect(second).toEqual({
                 model: "x",
                 shell: null,
-                experimental: { infinite_retry: true },
+                experimental: { infinite_retry: true, limit_reset_retry: true },
               })
 
-              yield* config.update!({ infinite_retry: false })
+              yield* config.update!({ infinite_retry: false, limit_reset_retry: false })
               const third = JSON.parse(yield* Effect.promise(() => fs.readFile(file, "utf8")))
               expect(third).toEqual({
                 model: "x",
                 shell: null,
-                experimental: { infinite_retry: false },
+                experimental: { infinite_retry: false, limit_reset_retry: false },
               })
             }).pipe(Effect.provide(testLayer(tmp.path, global))),
           ),

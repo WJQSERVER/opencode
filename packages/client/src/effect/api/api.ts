@@ -2809,6 +2809,7 @@ export interface ConfigApi<E = never> {
 export type ExperimentalConfigUpdateInput = {
   readonly shell?: string | null | undefined
   readonly infinite_retry?: boolean | undefined
+  readonly limit_reset_retry?: boolean | undefined
 }
 export type ExperimentalConfigUpdateOutput = void
 export type ExperimentalConfigUpdateOperation<E = never> = (
