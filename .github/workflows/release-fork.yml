@@ -40,7 +40,7 @@ on:
         default: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.inputs.version }}-${{ github.event.inputs.targets }}
+  group: ${{ github.workflow }}-${{ github.event.inputs.version || github.ref }}-${{ github.event.inputs.targets }}
   cancel-in-progress: false
 
 permissions:
