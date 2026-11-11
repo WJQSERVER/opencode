@@ -868,6 +868,9 @@ export const dict = {
   "settings.experimental.row.infiniteRetry.title": "Retry failures indefinitely",
   "settings.experimental.row.infiniteRetry.description":
     "Keep retrying provider failures at a steady 30-second interval after the initial backoff instead of stopping after ten attempts",
+  "settings.experimental.row.forceTokenSpeed.title": "Show tokens per second on every device",
+  "settings.experimental.row.forceTokenSpeed.description":
+    "Always show the tokens-per-second label in response footers, including on devices without hover support",
   "settings.experimental.row.sidebarOrganize.title": "Organize vertical sidebar",
   "settings.experimental.row.sidebarOrganize.description":
     "Choose how sessions are listed in the sidebar. Only applies to side tabs.",

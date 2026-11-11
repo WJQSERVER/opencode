@@ -147,6 +147,13 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     keywords: "retry failures provider backoff attempts infinite",
   },
   {
+    tab: "experimental",
+    label: "settings.experimental.row.forceTokenSpeed.title",
+    target: "settings-force-token-speed",
+    description: "settings.experimental.row.forceTokenSpeed.description",
+    keywords: "tokens per second throughput footer tok/s hover",
+  },
+  {
     tab: "appearance",
     label: "settings.general.row.colorScheme.title",
     target: "settings-color-scheme",

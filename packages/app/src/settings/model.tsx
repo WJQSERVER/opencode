@@ -138,6 +138,8 @@ const generalSchema = Persistence.struct({
   newQuestionUI: Schema.Boolean,
   // The redesigned session timeline, off until it ships.
   newTimeline: Persistence.optional(Schema.Boolean),
+  // Always show the tokens-per-second label in response footers, not just on hover-capable devices.
+  forceTokenSpeed: Persistence.optional(Schema.Boolean),
   sidebarOrganize: Schema.Literals(["projects", "list", "customize", "recent"]),
   mobileTitlebarPosition: Schema.Literals(["top", "bottom"]),
   // Owned by the review plugin, which copies it out once; kept so settings rewrites cannot drop it first.
@@ -442,6 +444,10 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         newTimeline: withFallback(() => store.general?.newTimeline, false),
         setNewTimeline(value: boolean) {
           setStore("general", "newTimeline", value)
+        },
+        forceTokenSpeed: withFallback(() => store.general?.forceTokenSpeed, false),
+        setForceTokenSpeed(value: boolean) {
+          setStore("general", "forceTokenSpeed", value)
         },
         newQuestionUI: withFallback(() => store.general?.newQuestionUI, defaultSettings.general.newQuestionUI),
         setNewQuestionUI(value: boolean) {

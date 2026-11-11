@@ -649,7 +649,7 @@
     gap: 4px;
   }
 
-  @media (hover: hover) {
+  @media (any-hover: hover) {
     [data-slot="text-part-meta-speed"] {
       display: inline-flex;
     }
@@ -679,6 +679,11 @@
     opacity: 1;
     pointer-events: auto;
   }
+}
+
+/* Force the tokens-per-second label visible on touch-only devices, opted in from the "Show tokens per second on every device" experimental setting. */
+:root[data-force-token-speed] [data-component="text-part"] [data-slot="text-part-meta-speed"] {
+  display: inline-flex;
 }
 
 [data-timeline-row="AssistantPart"][data-timeline-spacing="content"] [data-component="text-part"] {

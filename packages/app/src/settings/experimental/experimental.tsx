@@ -104,6 +104,17 @@ export const SettingsExperimental: Component<{ server?: ServerConnection.Any }> 
                 <Switch checked={infiniteRetry.current()} onChange={infiniteRetry.select} />
               </div>
             </SettingsRow>
+            <SettingsRow
+              title={language.t("settings.experimental.row.forceTokenSpeed.title")}
+              description={language.t("settings.experimental.row.forceTokenSpeed.description")}
+            >
+              <div data-action="settings-force-token-speed">
+                <Switch
+                  checked={settings.general.forceTokenSpeed()}
+                  onChange={(checked) => settings.general.setForceTokenSpeed(checked)}
+                />
+              </div>
+            </SettingsRow>
           </SettingsList>
         </div>
       </div>
