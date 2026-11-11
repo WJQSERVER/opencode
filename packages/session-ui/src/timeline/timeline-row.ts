@@ -77,6 +77,8 @@ export namespace TimelineRow {
     attempt: number
     message: string
     next: number
+    /** Set when the step waits for a subscription usage limit to reset, so the card renders the reset state. */
+    kind?: "free-limit" | "go-limit"
   }> {}
 
   /** A compaction the server has admitted but not started. */
@@ -167,7 +169,8 @@ export namespace TimelineRow {
       Predicate.isTagged(other, "Retry") &&
       other.attempt === row.attempt &&
       other.message === row.message &&
-      other.next === row.next,
+      other.next === row.next &&
+      other.kind === row.kind,
     CompactionQueued: (row) => (other: TimelineRow) =>
       Predicate.isTagged(other, "CompactionQueued") && other.inboxID === row.inboxID,
     TurnDiff: (row) => (other: TimelineRow) =>

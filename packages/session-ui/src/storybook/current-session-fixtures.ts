@@ -1001,6 +1001,27 @@ export const retryDocument = document(
   { type: "busy" },
 )
 
+export const goLimitRetryDocument = document(
+  [
+    user("msg_user_go_limit", "Ship the migration.", 50_000),
+    assistant({
+      id: "msg_assistant_go_limit",
+      offset: 51_000,
+      content: [],
+      retry: {
+        attempt: 2,
+        at: STORY_TIME + 5 * 60 * 60_000,
+        error: {
+          type: "provider.go-limit",
+          message: "OpenCode Go 5 Hour usage limit reached.",
+          retryAfterMs: 5 * 60 * 60_000,
+        },
+      },
+    }),
+  ] satisfies SessionMessageInfo[],
+  { type: "busy" },
+)
+
 const compactionPrelude = [
   user("msg_user_compact", "Continue the implementation after compacting context.", 60_000),
   assistant({

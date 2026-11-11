@@ -1302,6 +1302,7 @@ export function createSessionTimelineRowRenderer(input: {
           <div data-slot="session-turn-message-container" class={`w-full ${padding()}`}>
             <SessionRetry
               status={{ type: "retry", attempt: current().attempt, message: current().message, next: current().next }}
+              kind={current().kind}
               show={input.projection.activeMessageID() === current().userMessageID}
             />
           </div>

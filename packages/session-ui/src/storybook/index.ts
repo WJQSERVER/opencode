@@ -24,6 +24,7 @@ export {
   recoveryDocument,
   requestHistoryDocument,
   retryDocument,
+  goLimitRetryDocument,
   revertDocument,
   reviewDiffs,
   loadedResourcesDocument,

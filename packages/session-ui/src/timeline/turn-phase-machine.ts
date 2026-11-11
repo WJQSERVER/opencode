@@ -19,7 +19,13 @@ export type TurnPhase =
   | { readonly status: "idle" }
   | { readonly status: "working" }
   | { readonly status: "thinking"; readonly ref: PartRef; readonly placement: "separate" | "grouped" }
-  | { readonly status: "retrying"; readonly attempt: number; readonly message: string; readonly next: number }
+  | {
+      readonly status: "retrying"
+      readonly attempt: number
+      readonly message: string
+      readonly next: number
+      readonly kind?: TurnLimitKind
+    }
   | { readonly status: "failed"; readonly error: TurnErrorInfo }
   | { readonly status: "interrupted" }
 
@@ -32,7 +38,7 @@ export type TurnPhaseEvent =
       readonly session: "idle" | "busy" | "retry"
       readonly completed: boolean
       readonly reasoning?: { readonly ref: PartRef; readonly placement: TurnThinkingPlacement }
-      readonly retry?: { readonly attempt: number; readonly message: string; readonly next: number }
+      readonly retry?: { readonly attempt: number; readonly message: string; readonly next: number; readonly kind?: TurnLimitKind }
       readonly error?: { readonly interrupted: true } | { readonly interrupted: false; readonly info: TurnErrorInfo }
     }
   | { readonly type: "idle.failed"; readonly error: TurnErrorInfo }
@@ -88,7 +94,13 @@ export function sameTurnPhase(a: TurnPhase, b: TurnPhase) {
   if (a.status === "thinking") return b.status === "thinking" && a.placement === b.placement && sameRef(a.ref, b.ref)
 
   if (a.status === "retrying")
-    return b.status === "retrying" && a.attempt === b.attempt && a.message === b.message && a.next === b.next
+    return (
+      b.status === "retrying" &&
+      a.attempt === b.attempt &&
+      a.message === b.message &&
+      a.next === b.next &&
+      a.kind === b.kind
+    )
 
   if (a.status === "failed")
     return (

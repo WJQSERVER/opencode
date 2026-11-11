@@ -586,6 +586,12 @@ export namespace Timeline {
               attempt: interrupted.retry.attempt,
               message: interrupted.retry.error.message,
               next: interrupted.retry.at,
+              kind:
+                interrupted.retry.error.type === "provider.free-limit"
+                  ? ("free-limit" as const)
+                  : interrupted.retry.error.type === "provider.go-limit"
+                    ? ("go-limit" as const)
+                    : undefined,
             }),
           )
         if (!compaction && detail?.notices.placement !== "hidden")
@@ -607,6 +613,8 @@ export namespace Timeline {
             attempt: view.retry.attempt,
             message: view.retry.message,
             next: view.retry.next,
+            kind:
+              view.retry.kind === "free-limit" || view.retry.kind === "go-limit" ? view.retry.kind : undefined,
           }),
         )
 
@@ -747,7 +755,17 @@ function stepEvent(
         ? { ref: { messageID: message.id, partID: last.id }, placement }
         : undefined,
     retry: message.retry
-      ? { attempt: message.retry.attempt, message: message.retry.error.message, next: message.retry.at }
+      ? {
+          attempt: message.retry.attempt,
+          message: message.retry.error.message,
+          next: message.retry.at,
+          kind:
+            message.retry.error.type === "provider.free-limit"
+              ? ("free-limit" as const)
+              : message.retry.error.type === "provider.go-limit"
+                ? ("go-limit" as const)
+                : undefined,
+        }
       : undefined,
     error: !message.error
       ? undefined

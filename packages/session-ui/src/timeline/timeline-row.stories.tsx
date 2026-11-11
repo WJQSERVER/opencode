@@ -26,6 +26,7 @@ import {
   instructionsUpdatedSingleDocument,
   requestHistoryDocument,
   retryDocument,
+  goLimitRetryDocument,
   revertDocument,
   streamingDocument,
   thinkingDocument,
@@ -317,6 +318,17 @@ export const ProviderRetry = {
       title="Provider retry"
       description="A temporary provider limit keeps the turn active and explains the scheduled retry."
       document={retryDocument}
+      width="520px"
+    />
+  ),
+}
+
+export const GoLimitRetry = {
+  render: () => (
+    <CurrentSessionTimelineStory
+      title="Go limit retry"
+      description="A subscription usage limit suspends the turn and explains when it resumes."
+      document={goLimitRetryDocument}
       width="520px"
     />
   ),

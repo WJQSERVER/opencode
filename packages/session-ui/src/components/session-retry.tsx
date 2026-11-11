@@ -7,7 +7,7 @@ import { TextShimmer } from "@opencode/ui/text-shimmer"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { SessionErrorMessage } from "./session-error"
 
-export function SessionRetry(props: { status: SessionStatus; show?: boolean }) {
+export function SessionRetry(props: { status: SessionStatus; show?: boolean; kind?: "free-limit" | "go-limit" }) {
   const i18n = useI18n()
 
   const retry = createMemo(() => {
@@ -16,10 +16,29 @@ export function SessionRetry(props: { status: SessionStatus; show?: boolean }) {
     return props.status
   })
 
+  // A step waiting for a subscription limit to reset is not a transient hiccup: show the reset time
+  // instead of a countdown measured in seconds, so a five-hour wait does not read like "in 18000s".
+  const limit = createMemo(() => {
+    if (props.kind !== "go-limit" && props.kind !== "free-limit") return
+    const at = retry()?.next
+    if (at === undefined || !Number.isFinite(at) || Number.isNaN(new Date(at).getTime()))
+      return i18n.t(props.kind === "go-limit" ? "ui.sessionTurn.goLimit.title" : "ui.sessionTurn.freeLimit.title")
+    const now = Date.now()
+    const sameDay = new Date(at).toDateString() === new Date(now).toDateString() && at - now < 86_400_000
+    const time = new Intl.DateTimeFormat(
+      i18n.locale(),
+      sameDay ? { timeStyle: "short" } : { dateStyle: "medium", timeStyle: "short" },
+    ).format(at)
+    return i18n.t(
+      props.kind === "go-limit" ? "ui.sessionTurn.goLimit.lineReset" : "ui.sessionTurn.freeLimit.lineReset",
+      { time },
+    )
+  })
+
   const [seconds, setSeconds] = createSignal(0)
   createEffect(
     on(retry, (current) => {
-      if (!current) return
+      if (!current || limit()) return
 
       const update = () => {
         const next = retry()?.next
@@ -39,6 +58,9 @@ export function SessionRetry(props: { status: SessionStatus; show?: boolean }) {
 
     if (!current) return ""
 
+    const limited = limit()
+    if (limited) return limited
+
     if (current.message.includes("exceeded your current quota") && current.message.includes("gemini")) {
       return i18n.t("ui.sessionTurn.retry.geminiHot")
     }
@@ -52,6 +74,9 @@ export function SessionRetry(props: { status: SessionStatus; show?: boolean }) {
     const current = retry()
 
     if (!current) return ""
+
+    if (limit()) return i18n.t("ui.sessionTurn.retry.attemptLabel", { attempt: current.attempt })
+
     const count = Math.max(0, seconds())
 
     if (count > 0) return i18n.plural("ui.sessionTurn.retry.attemptWaiting", count, { attempt: current.attempt })

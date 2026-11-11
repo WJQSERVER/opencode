@@ -60,6 +60,13 @@ story("aligns the retry icon with the error label", async ({ mount }) => {
   expect(iconY).toBe(labelY)
 })
 
+story("renders the usage limit reset state instead of a second countdown", async ({ mount }) => {
+  const timeline = await mount("current-session-timeline-rows--go-limit-retry")
+  const card = timeline.locator('[data-kind="session-retry-card"]')
+  await expect(card).toContainText("OpenCode Go usage limit")
+  await expect(card.getByText(/Attempt \d+/)).toBeVisible()
+})
+
 story("centers the error icon on the first line of short and wrapped errors", async ({ mount }) => {
   const timeline = await mount("current-session-error-card--provider-errors")
   const cards = timeline.locator('[data-kind="session-error-card"]')
