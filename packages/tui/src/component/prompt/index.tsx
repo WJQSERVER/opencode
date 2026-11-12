@@ -48,7 +48,7 @@ import { useConnected } from "../use-connected"
 import { useToast } from "../../ui/toast"
 import { createFadeIn } from "../../util/signal"
 import { DialogSkill } from "../dialog-skill"
-import { useConfig, useCursorStyle } from "../../config"
+import { useConfig, useCursorStyle, useNewDesigns } from "../../config"
 import { usePromptMove } from "./move"
 import { promptFilesForServer, resolvePastedAttachments } from "./local-attachment"
 import { locationKey, useData } from "../../context/data"
@@ -218,6 +218,7 @@ export function Prompt(props: PromptProps) {
   const exit = useExit()
   const dimensions = useTerminalDimensions()
   const theme = useTheme()
+  const newDesigns = useNewDesigns()
   const { currentSyntax: syntax } = useThemes()
   const animationsEnabled = createMemo(() => config.animations ?? true)
   const list = createMemo(() => props.placeholders?.normal ?? [])
@@ -799,6 +800,7 @@ export function Prompt(props: PromptProps) {
           virtual: true,
           styleId,
           typeId: promptPartTypeId,
+          data: ref.type === "pasted" ? { pasted: prompt.pasted[ref.index].text, label: mention.text } : undefined,
         })
         setStore("extmarkToPart", (map: Map<number, PromptPartRef>) => {
           const newMap = new Map(map)
@@ -821,6 +823,19 @@ export function Prompt(props: PromptProps) {
         const pasted: PromptInfo["pasted"] = []
 
         for (const extmark of allExtmarks) {
+          // Undo restores the extmark after its entry in the live prompt has been removed.
+          if (typeof extmark.data?.pasted === "string" && typeof extmark.data?.label === "string") {
+            if (input.getTextRange(extmark.start, extmark.end) !== extmark.data.label) {
+              input.extmarks.delete(extmark.id)
+              continue
+            }
+            newMap.set(extmark.id, { type: "pasted", index: pasted.length })
+            pasted.push({
+              text: extmark.data.pasted,
+              source: { start: extmark.start, end: extmark.end, text: extmark.data.label },
+            })
+            continue
+          }
           const ref = draft.extmarkToPart.get(extmark.id)
           if (!ref) continue
           if (ref.type === "file") {
@@ -850,15 +865,7 @@ export function Prompt(props: PromptProps) {
             const index = skills.length
             skills.push(part)
             newMap.set(extmark.id, { type: "skill", index })
-            continue
           }
-          const part = draft.prompt.pasted[ref.index]
-          if (!part) continue
-          part.source.start = extmark.start
-          part.source.end = extmark.end
-          const index = pasted.length
-          pasted.push(part)
-          newMap.set(extmark.id, { type: "pasted", index })
         }
 
         const nextFiles = preserveMentionlessPromptAttachments(draft.prompt.files, files)
@@ -1405,6 +1412,7 @@ export function Prompt(props: PromptProps) {
       virtual: true,
       styleId: pasteStyleId,
       typeId: promptPartTypeId,
+      data: { pasted: text, label: virtualText },
     })
 
     setStore(
@@ -1426,7 +1434,6 @@ export function Prompt(props: PromptProps) {
     const part = store.prompt.pasted[ref.index]
     if (!part) return false
 
-    input.extmarks.delete(extmarkId)
     input.setSelection(extmark.start, extmark.end)
     input.insertText(part.text)
     return true
@@ -1577,7 +1584,9 @@ export function Prompt(props: PromptProps) {
   })
   const highlight = createMemo(() => {
     if (muted()) return theme.border.base
-    if (store.mode === "shell") return theme.text.action.primary.selected
+    if (store.mode === "shell")
+      // The new designs' interactive color matches the first agent's, so shell takes the second categorical color.
+      return newDesigns() ? (theme.categorical[1] ?? theme.categorical[0])[400] : theme.text.action.primary.selected
     return promptDisplay().agentColor ?? theme.border.base
   })
   const agentLabel = createMemo(() => (store.mode === "shell" ? "Shell" : promptDisplay().agentLabel))
