@@ -32,6 +32,7 @@ export {
   standaloneShellRunningDocument,
   streamingDocument,
   subagentDocument,
+  subagentReport,
   terminalFailedDocument,
   terminalPassedDocument,
   terminalRunningDocument,

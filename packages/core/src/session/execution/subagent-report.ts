@@ -8,7 +8,6 @@ import { SessionMessage } from "../message.js"
 import type { SessionSchema } from "../schema.js"
 import type { SessionStore } from "../store.js"
 import { SubagentCompletion } from "../subagent-completion.js"
-import { SubagentMetadata } from "../subagent-metadata.js"
 
 export type Outcome =
   | { readonly type: "succeeded" }
@@ -135,12 +134,6 @@ export const make = (deps: Deps) => {
     const period = periods.get(sessionID)
     periods.delete(sessionID)
     const jobState = yield* deps.jobs.prepareSubagentReport(sessionID, period?.boundGeneration)
-    if (jobState.mode === "foreground") {
-      return {
-        commit: () => deps.store.release(sessionID),
-        deliver: Effect.void,
-      }
-    }
     const initial = yield* deps.store.get(sessionID)
     if (!initial?.parentID && jobState.mode === "none") {
       return {
@@ -162,7 +155,7 @@ export const make = (deps: Deps) => {
         yield* deps.store.release(sessionID)
         const child = yield* deps.store.get(sessionID)
         const parent = child?.parentID ? yield* deps.store.get(child.parentID) : undefined
-        if (!child?.parentID || !SubagentMetadata.notify(child.metadata) || !parent) {
+        if (!child?.parentID || !parent) {
           if (jobState.mode === "background") {
             yield* deps.jobs.deleteBackgroundRow(jobState.notificationID)
             box.postCommit = { type: "cleanup", notificationID: jobState.notificationID }
