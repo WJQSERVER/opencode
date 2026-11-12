@@ -205,10 +205,15 @@ const layer = Layer.effect(
             if (result._tag === "Success") return new Response({ providerID: provider.id, results: result.success })
             const cause = result.failure
             const error = new RequestError({ providerID: provider.id, cause })
-            if (choice !== "random" || !HttpClientError.isHttpClientError(cause) || cause.response?.status !== 429)
-              return yield* error
+            const isHttpError = HttpClientError.isHttpClientError(cause)
+            const status = isHttpError ? cause.response?.status : undefined
+            // 429/402/5xx all mean this provider can't answer right now; rotate to the next one instead
+            // of letting its failure become the model's context.
+            const rescheduleworthy =
+              status === 429 || status === 402 || (status !== undefined && status >= 500 && status < 600)
+            if (choice !== "random" || !isHttpError || !rescheduleworthy) return yield* error
             const now = yield* Clock.currentTimeMillis
-            cooldown = { until: now + cooldownMillis(cause.response.headers["retry-after"], now), error }
+            cooldown = { until: now + cooldownMillis(cause.response?.headers["retry-after"], now), error }
             cooldowns.set(provider.id, cooldown)
           }
           provider = randomProvider(yield* Clock.currentTimeMillis, affinity, attempted)

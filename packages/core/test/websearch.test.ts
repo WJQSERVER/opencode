@@ -312,7 +312,7 @@ describe("WebSearch", () => {
     )
   })
 
-  it.effect("does not rotate or cool down providers for other failures", () =>
+  it.effect("does not rotate or cool down providers for non-transient failures", () =>
     Effect.gen(function* () {
       const exa = yield* register("exa")
       const parallel = yield* register("parallel")
@@ -321,7 +321,7 @@ describe("WebSearch", () => {
       const first = yield* websearch.query({ query: "first" })
       const provider = first.providerID === exa.providerID ? exa : parallel
       yield* Effect.forEach(
-        [TestWebSearch.httpError(401), TestWebSearch.httpError(500), new Error("timeout")],
+        [TestWebSearch.httpError(401), new Error("timeout")],
         (cause) =>
           Effect.gen(function* () {
             provider.failure.cause = cause
@@ -335,6 +335,29 @@ describe("WebSearch", () => {
       provider.failure.cause = undefined
       expect((yield* websearch.query({ query: "recovered" })).providerID).toBe(first.providerID)
       expect((first.providerID === exa.providerID ? parallel : exa).calls).toEqual([])
+    }),
+  )
+
+  it.effect("rotates to another provider for quota and transient server failures", () =>
+    Effect.gen(function* () {
+      const exa = yield* register("exa")
+      const parallel = yield* register("parallel")
+      const websearch = yield* WebSearch.Service
+      yield* websearch.select("random")
+      const first = yield* websearch.query({ query: "first" })
+      const provider = first.providerID === exa.providerID ? exa : parallel
+      const other = first.providerID === exa.providerID ? parallel : exa
+      yield* Effect.forEach(
+        [TestWebSearch.httpError(402), TestWebSearch.httpError(500), TestWebSearch.httpError(503)],
+        (cause) =>
+          Effect.gen(function* () {
+            provider.failure.cause = cause
+            const result = yield* websearch.query({ query: "quota" })
+            expect(result.providerID).toBe(other.providerID)
+            expect(other.calls.length).toBeGreaterThan(0)
+            expect((yield* websearch.default())?.id).toBe(other.providerID)
+          }),
+      )
     }),
   )
 
