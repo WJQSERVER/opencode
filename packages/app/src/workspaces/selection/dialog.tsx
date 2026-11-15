@@ -33,6 +33,7 @@ import {
   listPickerDirectory,
   pickerRelativePath,
   pickerAbsolutePath,
+  resolvePickerTarget,
 } from "./domain"
 import {
   createPickerTreeState,
@@ -157,14 +158,26 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
 
   const search = createDirectorySearch({ sdk, home, location, base: () => treeView().root || start() })
 
+  // Typing clears the tree's selection, so a non-empty input outranks the stale root: the footer and the confirm
+  // button resolve the typed path exactly like Enter does, instead of selecting the folder the tree happens to show.
+  const selectionPath = createMemo(() => {
+    const tree = treeView().result
+    const typed = comboboxView().input
+
+    if (!typed || treeView().selected || policy.action !== "directory") return tree
+    const resolved = resolvePickerTarget(policy, typed, home(), treeView().root || start() || home())
+
+    return resolved ? policy.result(resolved, "", true) : tree
+  })
+
   const fullSelectionPath = createMemo(() => {
-    const value = treeView().result
+    const value = selectionPath()
 
     return value ? displayPickerPath(value, "", home()) : ""
   })
 
   const shortSelectionPath = createMemo(() => {
-    const value = treeView().result
+    const value = selectionPath()
 
     return value ? shortenPickerRecentPath(value, home()) : ""
   })
@@ -401,7 +414,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
   }
 
   function resolve() {
-    const path = treeView().result
+    const path = selectionPath()
 
     if (!path) return
     props.onSelect(props.multiple ? [path] : path)
@@ -728,7 +741,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
         <Button variant="neutral" onClick={() => dialog.close()}>
           {language.t("common.cancel")}
         </Button>
-        <Button variant="contrast" disabled={!treeView().result} onClick={resolve}>
+        <Button variant="contrast" disabled={!selectionPath()} onClick={resolve}>
           {action[policy.action]}
         </Button>
       </DialogFooter>
