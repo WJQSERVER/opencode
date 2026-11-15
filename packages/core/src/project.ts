@@ -372,9 +372,12 @@ const layer = Layer.effect(
               Effect.map((items) => items.find((item) => item.kind === "main")?.directory ?? repo.worktree),
               fallback(repo.worktree),
             )
+      // A repo with no identity yet (no remote, no cached file, no root commit) gets a stable directory-derived
+      // ID like a plain folder instead of collapsing into the global project. The ID changes once the repo gains
+      // real identity, same as the global-to-identity transition used to.
       const resolved: Resolved = {
         previous,
-        id: id ?? ID.global,
+        id: id ?? ID.make(Hash.fast(`directory:${canonical}`)),
         directory: repo.worktree,
         canonical,
         vcs: { type: "git" as const, store: repo.commonDirectory },
@@ -417,7 +420,7 @@ const layer = Layer.effect(
       const id = previous ?? (yield* hgRoot(worktree))
       return {
         previous,
-        id: id ?? ID.global,
+        id: id ?? ID.make(Hash.fast(`directory:${worktree}`)),
         directory: worktree,
         vcs: { type: "hg" as const, store: dotHg },
       }

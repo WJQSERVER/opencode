@@ -22,6 +22,7 @@ import { InstructionEntry } from "./instruction-entry.js"
 import type { SQLiteUpdateSetSource } from "drizzle-orm/sqlite-core/query-builders/update"
 import { Slug } from "../util/slug.js"
 import { FSUtil } from "@opencode/util/fs-util"
+import { Hash } from "@opencode/util/hash"
 import { Money } from "@opencode/schema/money"
 import type { TokenUsage } from "@opencode/schema/token-usage"
 import { Worktree } from "@opencode/schema/worktree"
@@ -910,11 +911,16 @@ const layer = Layer.effectDiscard(
     // are untouched: the session did not move, its directory got identified.
     yield* bus.project(Worktree.Event.Resolved, (event) =>
       Effect.gen(function* () {
+        // A directory-derived fallback ID (the resolver's placeholder for a directory with no identity yet) is
+        // always a candidate too, so sessions parked there follow the directory's identity once it arrives.
         const candidates = [
           ...new Set(
-            [event.data.previous, Project.ID.global, ...(event.data.adopted ?? [])].filter(
-              (id) => id !== event.data.projectID,
-            ),
+            [
+              event.data.previous,
+              Project.ID.global,
+              Project.ID.make(Hash.fast(`directory:${event.data.directory}`)),
+              ...(event.data.adopted ?? []),
+            ].filter((id) => id !== event.data.projectID),
           ),
         ]
         if (candidates.length === 0) return

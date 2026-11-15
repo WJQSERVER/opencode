@@ -462,7 +462,7 @@ describe("Project.resolve", () => {
     }),
   )
 
-  it.live("returns git global for repo with no commits and no remote", () =>
+  it.live("falls back to a directory-derived id for repo with no commits and no remote", () =>
     Effect.gen(function* () {
       const tmp = yield* tmpdirScoped()
       yield* Effect.promise(() => initRepo(tmp.path))
@@ -470,7 +470,8 @@ describe("Project.resolve", () => {
 
       const result = yield* project.resolve(abs(tmp.path))
 
-      expect(result.id).toBe(Project.ID.make("global"))
+      expect(result.id).toBe(Project.ID.make(Hash.fast(`directory:${result.canonical}`)))
+      expect(result.id).not.toBe(Project.ID.global)
       expect(result.directory).toBe(yield* real(tmp.path))
       expect(result.canonical).toBe(result.directory)
       expect(result.previous).toBeUndefined()
@@ -625,7 +626,7 @@ describe("Project.resolve", () => {
     }),
   )
 
-  it.live("returns global id for unreadable mercurial metadata", () =>
+  it.live("falls back to a directory-derived id for unreadable mercurial metadata", () =>
     Effect.gen(function* () {
       const tmp = yield* tmpdirScoped()
       yield* Effect.promise(() => fs.mkdir(path.join(tmp.path, ".hg")))
@@ -634,7 +635,7 @@ describe("Project.resolve", () => {
       const result = yield* project.resolve(abs(tmp.path))
 
       expect(result.vcs?.type).toBe("hg")
-      expect(result.id).toBe(Project.ID.make("global"))
+      expect(result.id).toBe(Project.ID.make(Hash.fast(`directory:${result.directory}`)))
     }),
   )
 
@@ -751,7 +752,8 @@ describe("Project.resolve", () => {
       if (!supported) return
       yield* Effect.gen(function* () {
         const project = yield* Project.Service
-        expect((yield* project.resolve(abs(tmp.path))).id).toBe(Project.ID.global)
+        const first = yield* project.resolve(abs(tmp.path))
+        expect(first.id).toBe(Project.ID.make(Hash.fast(`directory:${first.canonical}`)))
         yield* Effect.promise(() =>
           $`git -c user.name=Test -c user.email=test@opencode.test -c commit.gpgsign=false commit --allow-empty -qm root`
             .cwd(tmp.path)
