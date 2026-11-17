@@ -312,7 +312,7 @@ function RetryAndRecoverStory() {
           Finish response
         </button>
       </div>
-      <CurrentSessionProviders document={document()} backgroundCompaction>
+      <CurrentSessionProviders document={document()}>
         <SessionTimeline document={document()} />
       </CurrentSessionProviders>
     </section>
@@ -456,7 +456,7 @@ function CompactSessionStory() {
           Cancel next compaction
         </button>
       </div>
-      <CurrentSessionProviders document={document()} backgroundCompaction>
+      <CurrentSessionProviders document={document()}>
         <SessionTimeline document={document()} />
       </CurrentSessionProviders>
     </section>
@@ -465,34 +465,24 @@ function CompactSessionStory() {
 
 const CompactSession = { render: () => <CompactSessionStory /> }
 
-// Automatic compactions only show quietly with experimental.background_compaction on; turn it off to see today's record.
-const backgroundCompaction = {
-  args: { backgroundCompaction: true },
-  argTypes: { backgroundCompaction: { control: "boolean" } },
-}
-
 export const CompactionInProgress = {
-  ...backgroundCompaction,
-  render: (args: { backgroundCompaction: boolean }) => (
+  render: () => (
     <CurrentSessionTimelineStory
       title="Compaction in progress"
-      description="With background compaction on, an automatic compaction is one quiet divider whose lines carry light toward Compacting."
+      description="An automatic compaction is one quiet divider whose lines carry light toward Compacting."
       document={compactionRunningDocument}
       width="600px"
-      backgroundCompaction={args.backgroundCompaction}
     />
   ),
 }
 
 export const CompactionAndContinuation = {
-  ...backgroundCompaction,
-  render: (args: { backgroundCompaction: boolean }) => (
+  render: () => (
     <CurrentSessionTimelineStory
       title="Compaction and continuation"
-      description="With background compaction on, a finished automatic compaction reads Compacted; clicking it opens the summary."
+      description="A finished automatic compaction reads Compacted; clicking it opens the summary."
       document={compactionDocument}
       width="600px"
-      backgroundCompaction={args.backgroundCompaction}
     />
   ),
 }
@@ -504,7 +494,6 @@ export const CompactionManual = {
       description="A /compact keeps the full record: started divider, summary and usage."
       document={compactionManualDocument}
       width="600px"
-      backgroundCompaction
     />
   ),
 }
@@ -554,7 +543,7 @@ function CompactionReplayStory(props: { duration: number }) {
           Replay
         </button>
       </div>
-      <CurrentSessionProviders document={document()} backgroundCompaction>
+      <CurrentSessionProviders document={document()}>
         <SessionTimeline document={document()} />
       </CurrentSessionProviders>
     </section>
@@ -580,7 +569,6 @@ export const CompactionFailed = {
       description="A failed compaction keeps the production divider and shows the provider error."
       document={compactionFailedDocument}
       width="600px"
-      backgroundCompaction
     />
   ),
 }
@@ -592,7 +580,6 @@ export const CompactionCancelled = {
       description="An interrupted compaction keeps the production divider without an empty error block."
       document={compactionCancelledDocument}
       width="600px"
-      backgroundCompaction
     />
   ),
 }
