@@ -254,6 +254,8 @@ export function displayDirectory(path: string | undefined) {
 }
 
 import { resolveFileDiff } from "../components/session-diff"
+import { factsOf, summarize } from "../timeline/facts"
+import { contextGroupLabel, webSearchProviderLabel } from "./context-group-label"
 
 export function taskAgentName(raw: string | undefined, list?: readonly { name: string }[]) {
   if (!raw) return undefined
@@ -263,18 +265,6 @@ export function taskAgentName(raw: string | undefined, list?: readonly { name: s
     list?.find((entry) => entry.name === raw || entry.name.toLowerCase() === key)?.name ??
     `${raw[0].toUpperCase()}${raw.slice(1)}`
   )
-}
-
-const webSearchProviderNames = new Map([
-  ["tinyfish", "TinyFish"],
-  ["opencode", "OpenCode"],
-])
-
-function webSearchProviderLabel(provider: string | undefined, i18n: ReturnType<typeof useI18n>) {
-  if (!provider) return i18n.t("ui.tool.websearch")
-  const name = webSearchProviderNames.get(provider) ?? `${provider[0].toUpperCase()}${provider.slice(1)}`
-
-  return i18n.t("ui.tool.websearch.provider", { provider: name })
 }
 
 function readArgs(input: ToolInput) {
@@ -290,44 +280,6 @@ function skillToolName(input: ToolInput, metadata: ToolMetadata) {
 
 export function currentSkillName(tool: SessionMessageAssistantTool) {
   return skillToolName(toolInput(currentToolInput(tool)), toolMetadata(currentToolMetadata(tool)))
-}
-
-// Context group labels name each tool once; detailed subtitles belong to the tool rows.
-function toolTitle(tool: SessionMessageAssistantTool, i18n: UiI18n) {
-  switch (tool.name) {
-    case "read":
-      return i18n.t("ui.tool.read")
-    case "list":
-      return i18n.t("ui.tool.list")
-    case "glob":
-      return i18n.t("ui.tool.glob")
-    case "grep":
-      return i18n.t("ui.tool.grep")
-    case "browser":
-      return i18n.t("ui.tool.browser")
-    case "webfetch":
-      return i18n.t("ui.tool.webfetch")
-    case "websearch":
-      return webSearchProviderLabel(toolMetadata(currentToolMetadata(tool)).provider, i18n)
-    case "subagent":
-      return i18n.t("ui.tool.agent.default")
-    case "shell":
-      return i18n.t("ui.tool.shell")
-    case "execute":
-      return i18n.t("ui.tool.execute")
-    case "edit":
-      return i18n.t("ui.messagePart.title.edit")
-    case "write":
-      return i18n.t("ui.messagePart.title.write")
-    case "patch":
-      return i18n.t("ui.tool.patch")
-    case "question":
-      return i18n.t("ui.tool.questions")
-    case "skill":
-      return i18n.t("ui.tool.skill")
-    default:
-      return tool.name
-  }
 }
 
 export function urls(text: string | undefined) {
@@ -442,18 +394,6 @@ export function CurrentContextToolGroup(props: {
     () => props.busy || tools().some((tool) => tool.state.status === "streaming" || tool.state.status === "running"),
   )
 
-  const names = createMemo(() =>
-    i18n.list([
-      ...new Set(
-        props.parts.flatMap((part) => {
-          if (part.type !== "tool" && part.type !== "shell") return []
-
-          return [part.type === "tool" ? toolTitle(part, i18n) : i18n.t("ui.tool.shell")]
-        }),
-      ),
-    ]),
-  )
-
   const reasoning = createMemo(() => props.parts.flatMap((part) => (part.type === "reasoning" ? [part] : [])))
   // Thoughts alone are not finished work yet, so the live group reads as Thinking, in place of Working, rather than
   // "Used 1 Thought".
@@ -489,39 +429,13 @@ export function CurrentContextToolGroup(props: {
   })
 
   const label = createMemo(() => {
-    const thoughts = reasoning().length
-
     if (thinking()) {
       const text = i18n.t("ui.sessionTurn.status.thinking")
 
       return { text, title: text, before: "", count: undefined, between: "", after: "" }
     }
 
-    if (!names() && !thoughts) {
-      const text = i18n.t("ui.messagePart.context.updates")
-
-      return { text, title: "", before: text, count: undefined, between: "", after: "" }
-    }
-
-    const title = names() || i18n.plural("ui.messagePart.context.thought", thoughts)
-    const count = props.parts.filter((part) => part.type === "tool" || part.type === "shell").length || thoughts
-    const text = i18n.plural("ui.messagePart.tools.used", count, { tools: title })
-    const index = text.indexOf(title)
-    const before = text.slice(0, index).trim()
-    const countText = String(count)
-    const countIndex = before.indexOf(countText)
-    const after = text.slice(index + title.length).trim()
-
-    if (countIndex === -1) return { text, title, before, count: undefined, between: "", after }
-
-    return {
-      text,
-      title,
-      before: before.slice(0, countIndex).trim(),
-      count,
-      between: before.slice(countIndex + countText.length).trim(),
-      after,
-    }
+    return contextGroupLabel(props.parts, i18n)
   })
 
   const items = createMemo(() =>
@@ -899,11 +813,13 @@ export function CurrentReadToolGroup(props: {
     ]
   })
 
-  const summary = createMemo(() =>
-    props.names !== undefined && !open() && files().length > props.names
-      ? i18n.plural("ui.timeline.activity.files", files().length)
-      : undefined,
-  )
+  const summary = createMemo(() => {
+    const count = summarize(factsOf(props.tools)).readFiles.length
+
+    return props.names !== undefined && !open() && count > props.names
+      ? i18n.plural("ui.timeline.activity.files", count)
+      : undefined
+  })
 
   const expandable = () => open() || state.truncated || !!summary()
 
@@ -975,7 +891,7 @@ export function CurrentReadToolGroup(props: {
         </div>
         <Show when={expandable()}>
           <span data-slot="read-tool-group-arrow" aria-hidden="true">
-            <Icon name="fill-triangle-down" size="small" />
+            <Icon name="fill-triangle-down" />
           </span>
         </Show>
       </div>
@@ -1357,7 +1273,7 @@ function ToolFileAccordion(props: {
             </div>
             <div data-slot="apply-patch-trigger-actions">
               {props.actions}
-              <Icon name="chevron-grabber-vertical" size="small" />
+              <Icon name="chevron-grabber-vertical" />
             </div>
           </div>
         }
@@ -1719,7 +1635,7 @@ ToolRegistry.register({
       <BasicTool
         {...props}
         hideDetails
-        icon="window-cursor"
+        icon="select-element"
         trigger={
           <div data-slot="basic-tool-tool-info-structured">
             <div data-slot="basic-tool-tool-info-main">
@@ -1759,7 +1675,7 @@ ToolRegistry.register({
     return (
       <BasicTool
         {...props}
-        icon="window-cursor"
+        icon="select-element"
         trigger={{
           title: title(),
           subtitle: query(),
@@ -1928,7 +1844,7 @@ export function ConsoleCopy(props: { text: string; label: string }) {
     <div data-slot="bash-copy">
       <Tooltip value={label()} placement="top" forceOpen={copy.copied() || undefined}>
         <IconButton
-          icon={<Icon name={copy.copied() ? "check" : "outline-copy"} size="small" />}
+          icon={<Icon name={copy.copied() ? "check" : "copy"} />}
           size="normal"
           variant="ghost-muted"
           onMouseDown={(event) => event.preventDefault()}
@@ -1983,7 +1899,7 @@ ToolRegistry.register({
     return (
       <BasicTool
         {...props}
-        icon="console"
+        icon="terminal"
         rail={false}
         hasContent={calls().length > 0 || !!error() || !!output()}
         compact
@@ -2004,7 +1920,7 @@ ToolRegistry.register({
           viewable() ? (
             <Tooltip value={i18n.t("ui.tool.execute.viewCode")} placement="top">
               <IconButton
-                icon={<Icon name="code-slash" size="small" />}
+                icon={<Icon name="code" />}
                 size="normal"
                 variant="ghost"
                 aria-label={i18n.t("ui.tool.execute.viewCode")}
@@ -2055,7 +1971,7 @@ function ExecuteDetails(props: { code: string; output: string; error?: string; c
           <span data-slot="execute-details-meta">{i18n.plural("ui.tool.execute.calls", props.calls)}</span>
         </div>
       </DialogHeader>
-      <DialogBody class="min-h-0 flex-none overflow-y-auto">
+      <DialogBody class="min-h-0">
         <div data-component="execute-details" style={{ "--execute-details-number-width": `${numberDigits()}ch` }}>
           <ExecuteDetailsSection
             label={i18n.t("ui.tool.execute.code")}
@@ -2131,7 +2047,7 @@ function ExecuteDetailsSection(props: {
           forceOpen={copy.copied() || undefined}
         >
           <IconButton
-            icon={<Icon name={copy.copied() ? "check" : "outline-copy"} size="small" />}
+            icon={<Icon name={copy.copied() ? "check" : "copy"} />}
             size="normal"
             variant="ghost-muted"
             aria-label={copy.copied() ? i18n.t("ui.message.copied") : props.copyLabel}
@@ -2144,13 +2060,24 @@ function ExecuteDetailsSection(props: {
   )
 }
 
+// Whether the press that ends on `row` selected text in it, which the row keeps rather than toggling. A selection that
+// neither starts nor ends in the row is not that press's: a text field keeps its selection after focus leaves it, and a
+// press on a row the host made non-selectable clears nothing.
+function selectsRowText(row: HTMLElement) {
+  const selection = window.getSelection()
+
+  if (!selection || selection.isCollapsed) return false
+
+  return row.contains(selection.anchorNode) || row.contains(selection.focusNode)
+}
+
 function ExecuteOutputRow(props: { output: string }) {
   const i18n = useI18n()
   const [open, setOpen] = createSignal(false)
   const text = createMemo(() => formatExecuteOutput(props.output).text)
 
-  const toggle = () => {
-    if (window.getSelection()?.toString()) return
+  const toggle = (event: { currentTarget: HTMLElement }) => {
+    if (selectsRowText(event.currentTarget)) return
     setOpen((value) => !value)
   }
 
@@ -2166,7 +2093,7 @@ function ExecuteOutputRow(props: { output: string }) {
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return
           event.preventDefault()
-          toggle()
+          toggle(event)
         }}
       >
         <span data-slot="execute-tool-call-marker">
@@ -2194,8 +2121,8 @@ function ExecuteCallRow(props: { call?: ExecuteToolCall; error?: string }) {
   const expandable = () => input().length > 0 || !!props.error
   const summary = () => (props.call ? args().join(", ") : props.error?.split("\n", 1)[0])
 
-  const toggle = () => {
-    if (!expandable() || window.getSelection()?.toString()) return
+  const toggle = (event: { currentTarget: HTMLElement }) => {
+    if (!expandable() || selectsRowText(event.currentTarget)) return
     setOpen((value) => !value)
   }
 
@@ -2213,7 +2140,7 @@ function ExecuteCallRow(props: { call?: ExecuteToolCall; error?: string }) {
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return
           event.preventDefault()
-          toggle()
+          toggle(event)
         }}
       >
         <Show when={failed()} fallback={<span data-slot="execute-tool-call-marker">›</span>}>
@@ -2324,7 +2251,7 @@ ToolRegistry.register({
       <BasicTool
         {...props}
         status={view().basicStatus}
-        icon="console"
+        icon="terminal"
         rail={false}
         hasContent
         compact
@@ -2602,7 +2529,7 @@ ToolRegistry.register({
                               />
                             </Match>
                           </Switch>
-                          <Icon name="chevron-grabber-vertical" size="small" />
+                          <Icon name="chevron-grabber-vertical" />
                         </div>
                       </div>
                     }
@@ -2661,7 +2588,7 @@ ToolRegistry.register({
       <BasicTool
         {...props}
         defaultOpen={completed()}
-        icon="bubble-5"
+        icon="comment"
         trigger={{
           title: i18n.t("ui.tool.questions"),
           subtitle: subtitle(),

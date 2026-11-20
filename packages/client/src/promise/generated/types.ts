@@ -308,6 +308,10 @@ export type PermissionReply = "once" | "always" | "reject"
 
 export type PtyID = string
 
+export type JobStatus = "running" | "completed" | "error" | "cancelled"
+
+export type JobTime = { started: number; completed?: number }
+
 export type FormMetadata1 = { [x: string]: any }
 
 export type FormWhen1 = { key: string; op: "eq" | "neq"; value: string | number | boolean }
@@ -339,6 +343,8 @@ export type AutomationTriggerEvent = { type: "event"; server: string; event: str
 
 export type AutomationActionCode = { type: "code"; code: string; args?: JsonValue }
 
+export type AutomationActionShell = { type: "shell"; command: string }
+
 export type AutomationStatus = "active" | "paused" | "done"
 
 export type AutomationOutcome = "fired" | "late" | "skipped" | "disabled" | "failed" | "expired"
@@ -348,10 +354,6 @@ export type ArtifactCapability = "static" | "server-code" | "sqlite" | "durable-
 export type ArtifactID = string
 
 export type ArtifactTime = { created: number; updated: number }
-
-export type JobStatus = "running" | "completed" | "error" | "cancelled"
-
-export type JobTime = { started: number; completed?: number }
 
 export type ReferenceGitSource = { type: "git"; repository: string; branch?: string }
 
@@ -738,7 +740,7 @@ export type ModelCost = {
 
 export type GenerateVideoRunning = { id: GenerateVideoID; status: "running" }
 
-export type BlobInfo = { id: BlobID; mime: string; bytes: number; expiresAt: number }
+export type BlobInfo = { id: BlobID; mime: string; bytes: number }
 
 export type GenerateVideoError = {
   id: GenerateVideoID
@@ -876,6 +878,59 @@ export type PersistentPtyReadResult = {
   screen: { text: string; cols: number; rows: number; cursor: { x: number; y: number } }
 }
 
+export type JobShell = {
+  kind: "shell"
+  id: string
+  sessionID: SessionID
+  status: JobStatus
+  title?: string
+  time: JobTime
+  shellID: string
+  command: string
+}
+
+export type JobSubagent = {
+  kind: "subagent"
+  id: string
+  sessionID: SessionID
+  status: JobStatus
+  title?: string
+  time: JobTime
+  childSessionID: SessionID
+  agent: string
+  description: string
+}
+
+export type JobImage = {
+  kind: "image"
+  id: string
+  sessionID: SessionID
+  status: JobStatus
+  title?: string
+  time: JobTime
+  path: string
+  model: string
+}
+
+export type JobVideo = {
+  kind: "video"
+  id: string
+  sessionID: SessionID
+  status: JobStatus
+  title?: string
+  time: JobTime
+  path: string
+}
+
+export type JobCodeMode = {
+  kind: "codemode"
+  id: string
+  sessionID: SessionID
+  status: JobStatus
+  title?: string
+  time: JobTime
+}
+
 export type FormStringField1 = {
   key: string
   title?: string
@@ -960,40 +1015,6 @@ export type ArtifactInfo = {
   entry: string
   url: string
   time: ArtifactTime
-}
-
-export type JobShell = {
-  kind: "shell"
-  id: string
-  sessionID: SessionID
-  status: JobStatus
-  title?: string
-  time: JobTime
-  shellID: string
-  command: string
-}
-
-export type JobSubagent = {
-  kind: "subagent"
-  id: string
-  sessionID: SessionID
-  status: JobStatus
-  title?: string
-  time: JobTime
-  childSessionID: SessionID
-  agent: string
-  description: string
-}
-
-export type JobImage = {
-  kind: "image"
-  id: string
-  sessionID: SessionID
-  status: JobStatus
-  title?: string
-  time: JobTime
-  path: string
-  model: string
 }
 
 export type VcsInfo = { provider?: string; branch: VcsBranch }
@@ -2269,6 +2290,8 @@ export type PersistentPtySnapshot = {
   cursor: { x: number; y: number }
 }
 
+export type JobInfo = JobShell | JobSubagent | JobImage | JobVideo | JobCodeMode
+
 export type FormField1 =
   | FormStringField1
   | FormNumberField1
@@ -2293,8 +2316,6 @@ export type AutomationTrigger =
   | AutomationTriggerEvent
 
 export type ArtifactContent = { info: ArtifactInfo; files: { [x: string]: string } }
-
-export type JobInfo = JobShell | JobSubagent | JobImage
 
 export type SessionInboxMove = {
   id: SessionMessageID
@@ -2618,10 +2639,15 @@ export type ConfigEntry =
           media_blob?: boolean
           automations?: boolean
           artifacts?: boolean
-          video_generate?: boolean
+          video_generate?: boolean | { model?: string | { providerID: string; model: string; variant?: string } }
           console_watches?: boolean
           mcp_events?: boolean
+          recommended_api?: boolean
           full_codemode?: boolean
+          machines?: boolean
+          home_memory?: boolean
+          project_overlay?: boolean
+          sqlite_fts?: boolean
           schedules?: boolean
           part_rows?: boolean
           infinite_retry?: boolean
@@ -2647,7 +2673,7 @@ export type ConfigEntry =
     }
   | { type: "directory"; path: AbsolutePath }
 
-export type AutomationAction = AutomationActionPrompt | AutomationActionCode
+export type AutomationAction = AutomationActionPrompt | AutomationActionCode | AutomationActionShell
 
 export type UsageLimitsInfo = {
   workspace: { id: string; name?: string; usageURL: string }
@@ -2717,6 +2743,15 @@ export type CredentialEntry = {
   label: string
   active: boolean
   value: CredentialValue
+}
+
+export type ExperimentalJobUpdated = {
+  id: EventID
+  created: number
+  metadata?: { [x: string]: any }
+  type: "experimental.job.updated"
+  location?: LocationRef
+  data: { info: JobInfo }
 }
 
 export type FormFields1 = [FormField1, ...Array<FormField1>]
@@ -3004,6 +3039,7 @@ export type V2Event =
   | ShellCreated
   | ShellExited
   | ShellDeleted
+  | ExperimentalJobUpdated
   | FormCreated
   | FormReplied
   | FormCancelled
@@ -4419,7 +4455,7 @@ export type FileFindOutput = { location: LocationPublicRef; data: Array<FileSyst
 export type ExperimentalFileWriteInput = {
   readonly location?: { readonly directory?: string | undefined } | undefined
   readonly path: string
-  readonly payload: globalThis.Uint8Array
+  readonly payload: globalThis.Uint8Array | globalThis.Blob
 }
 
 export type ExperimentalFileWriteOutput = { location: LocationPublicRef; data: FileSystemWrite }
@@ -4539,6 +4575,7 @@ export type EventSubscribeInput = {
         | "shell.created"
         | "shell.exited"
         | "shell.deleted"
+        | "experimental.job.updated"
         | "form.created"
         | "form.replied"
         | "form.cancelled"
@@ -4692,6 +4729,7 @@ export type ExperimentalAutomationCreateInput = {
           | { readonly subagent: string; readonly session?: never }
       }
     | { readonly type: "code"; readonly code: string; readonly args?: JsonValue }
+    | { readonly type: "shell"; readonly command: string }
   readonly expires?: string | undefined
 }
 
@@ -4780,12 +4818,16 @@ export type ExperimentalArtifactsViewOutput = globalThis.Uint8Array
 
 export type ExperimentalJobListInput = {
   readonly sessionID?: string | undefined
-  readonly kind?: ("shell" | "subagent" | "image") | undefined
+  readonly kind?: ("shell" | "subagent" | "image" | "video" | "codemode") | undefined
   readonly status?: ("running" | "completed" | "error" | "cancelled") | undefined
   readonly descendants?: boolean | undefined
 }
 
 export type ExperimentalJobListOutput = { data: Array<JobInfo> }["data"]
+
+export type ExperimentalJobCancelInput = { readonly id: string }
+
+export type ExperimentalJobCancelOutput = void
 
 export type ShellListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

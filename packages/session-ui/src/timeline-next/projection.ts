@@ -8,7 +8,8 @@ import type {
   SessionStatus,
 } from "@opencode/client/promise"
 import { Effect, Option, Predicate, Schema } from "effect"
-import { createComputed, createMemo, createSignal, mapArray, type Accessor } from "solid-js"
+import { createComputed, createMemo, createSignal, mapArray, untrack, type Accessor } from "solid-js"
+import { turnCommentary } from "../timeline/commentary"
 import { timelineNoticeRequired, type TimelineDetail } from "../timeline/detail"
 import { TimelineRow, type PartGroup, type PartRef } from "../timeline/timeline-row"
 import {
@@ -22,18 +23,11 @@ import {
   type TurnThinkingPlacement,
 } from "../timeline/turn-phase-machine"
 import { errorInfo } from "./errors"
-import { noticeEvent, toolEvent, workKey, type TimelineEvent } from "./events"
-import {
-  contentGroup,
-  contentShows,
-  echoesUserShell,
-  hidesActivity,
-  liveThinkingShows,
-  movedInPlace,
-  noticePlacement,
-  textShows,
-  toolRule,
-} from "./rules"
+import { launchOf } from "../timeline/facts"
+import { hidesActivity, placeNotice, placer, type Place } from "../timeline/place"
+import { placeFacts } from "../timeline/projection"
+import { noticeEvent, workKey, type TimelineEvent } from "./events"
+import { echoesUserShell, liveThinkingShows, movedInPlace, textShows } from "./rules"
 
 type Notice = Exclude<SessionMessageInfo, { type: "user" | "assistant" | "shell" | "idle" }>
 
@@ -43,7 +37,7 @@ type FailedIdle = SessionMessageIdle & {
 }
 
 type Entry =
-  | { type: "assistant"; message: SessionMessageAssistant }
+  | { type: "assistant"; message: SessionMessageAssistant; run: number }
   | { type: "notice"; message: Notice }
   | { type: "idle"; message: FailedIdle }
   | { type: "diff"; message: SessionMessageIdle; from: string; files: string[] }
@@ -72,6 +66,8 @@ type Input = {
   turnDiffs: boolean
   /** Whether a part shows. Text and thoughts are read through signals, so a streamed delta does not rebuild the rows. */
   shows: (content: Content) => boolean
+  /** Where a part shows, each call placed once per build. */
+  place: (content: Content, commentary?: boolean) => Place
 }
 
 // A field of the wrong type decodes as absent, so one bad field does not discard its neighbours.
@@ -128,14 +124,18 @@ export function createNextTimelineProjection(input: {
       const [visible, setVisible] = createSignal(false)
       createComputed(() => setVisible(textShows(content)))
 
-      return [content, visible] as const
+      // The signal only says when visibility flips, one computation after the write that flipped it. Rows built from
+      // its value in between list a part that no longer shows, so the value comes from the part itself.
+      return [content, () => (visible(), untrack(() => textShows(content)))] as const
     },
   )
 
   const textVisible = createMemo(() => new Map<Content, Accessor<boolean>>(textParts()))
+  const factOf = placeFacts(input.sessionMessages)
 
   const projection = createMemo(() => {
     const detail = input.timelineDetail()
+    const place = placer(detail, "next", factOf)
 
     return constructRows({
       messages: input.sessionMessages(),
@@ -144,9 +144,10 @@ export function createNextTimelineProjection(input: {
       pendingInputIDs: input.pendingInputIDs?.(),
       queuedCompactionIDs: input.queuedCompactionIDs?.() ?? [],
       turnDiffs: input.turnDiffs?.() ?? false,
+      place,
       shows: (content) =>
         content.type === "tool"
-          ? contentShows(detail, content)
+          ? place(content).placement !== "hidden"
           : (content.type === "text" || detail.thinking.placement !== "hidden") && textVisible().get(content)!(),
     })
   })
@@ -250,7 +251,7 @@ export function contentEntries(message: SessionMessageAssistant) {
 }
 
 function constructRows(input: Input) {
-  const { turns, leading } = constructTurns(input)
+  const { turns, leading, openRun } = constructTurns(input)
 
   const activeMessageID =
     turns.findLast(
@@ -271,14 +272,21 @@ function constructRows(input: Input) {
 
   const commentary = new Set(
     input.detail.commentary.placement !== "separate"
-      ? turns.flatMap((turn) => turnCommentary(turn.entries, viewTurnPhase(phaseOf(turn)).settled, input.shows))
+      ? turns.flatMap((turn) =>
+          turnCommentary(
+            turn.entries.filter((entry) => entry.type === "assistant"),
+            openRun,
+            viewTurnPhase(phaseOf(turn)).settled,
+            input.shows,
+          ),
+        )
       : [],
   )
 
   const visible = (content: Content) =>
-    !(input.detail.commentary.placement === "hidden" && commentary.has(content)) && input.shows(content)
+    !(commentary.has(content) && input.place(content, true).placement === "hidden") && input.shows(content)
 
-  const noticeShows = (message: Notice) => noticePlacement(input.detail, message) !== "hidden"
+  const noticeShows = (message: Notice) => placeNotice(message, input.detail, "next") !== "hidden"
 
   // Your messages and the commands you ran always show; any other turn shows when something in it does.
   const visibleTurns = turns.filter(
@@ -312,7 +320,7 @@ function constructRows(input: Input) {
           ),
         ]
 
-      return turnRows(turn, index > 0, phaseOf(turn), input.detail, visible, commentary)
+      return turnRows(turn, index > 0, phaseOf(turn), input.detail, visible, commentary, input.place)
     }),
   ]
 
@@ -345,6 +353,7 @@ function constructTurns(input: Input) {
   const leading: Notice[] = []
   const turnByUserID = new Map<string, Turn>()
   let current: Turn | undefined
+  let openRun = 0
   let execution: { opener: string; turn: Turn; files: Set<string> } | undefined
 
   const appendIdle = (message: SessionMessageIdle) => {
@@ -412,6 +421,7 @@ function constructTurns(input: Input) {
 
     if (message.type === "idle") {
       appendIdle(message)
+      openRun++
 
       // The summary follows the turn's last prompt, after any failure the marker reports.
       // Sorted like the diff route's git order, so the list keeps its order when the diffs arrive.
@@ -431,17 +441,17 @@ function constructTurns(input: Input) {
     message.snapshot?.files?.forEach((file) => execution?.files.add(file))
 
     if (current && !current.shell) {
-      current.entries.push({ type: "assistant", message })
+      current.entries.push({ type: "assistant", message, run: openRun })
 
       return
     }
 
-    const turn: Turn = { id: message.id, time: message.time, entries: [{ type: "assistant", message }] }
+    const turn: Turn = { id: message.id, time: message.time, entries: [{ type: "assistant", message, run: openRun }] }
     turns.push(turn)
     current = turn
   })
 
-  return { turns, leading }
+  return { turns, leading, openRun }
 }
 
 function turnRows(
@@ -451,6 +461,7 @@ function turnRows(
   detail: TimelineDetail,
   isVisible: (content: Content) => boolean,
   commentary: ReadonlySet<Content>,
+  place: Input["place"],
 ) {
   const rows: TimelineRow.TimelineRow[] = []
   const assistantMessages = turn.entries.flatMap((entry) => (entry.type === "assistant" ? [entry.message] : []))
@@ -483,7 +494,7 @@ function turnRows(
 
     const appendGroups = (items: typeof refs) => {
       let offset = 0
-      groupContent(items, detail, commentary).forEach((group) => {
+      groupContent(items, place, commentary).forEach((group) => {
         const tool = group.type !== "part" || items[offset]?.content.type !== "text"
         offset += group.type === "part" ? 1 : group.refs.length
         rows.push(
@@ -561,7 +572,7 @@ function turnRows(
 
         return
       case "notice":
-        if (noticePlacement(detail, entry.message) === "hidden") return
+        if (placeNotice(entry.message, detail, "next") === "hidden") return
         appendAssistantSegment(assistantSegment)
         assistantSegment = []
         rows.push(new TimelineRow.Notice({ userMessageID: turn.id, messageID: entry.message.id }))
@@ -628,26 +639,6 @@ function stepEvent(
 
 function isFailedIdle(message: SessionMessageInfo): message is FailedIdle {
   return message.type === "idle" && message.outcome === "failed" && !!message.error
-}
-
-// Text that a tool call follows in the same turn is commentary; text after the last tool call is the answer.
-// OpenAI Responses models label each message with a phase, which wins over position. A settled turn
-// without an answer keeps its last text, so an interrupted turn still ends with something to read.
-function turnCommentary(entries: Entry[], settled: boolean, visible: (content: Content) => boolean) {
-  const contents = entries.flatMap((entry) => (entry.type === "assistant" ? entry.message.content : []))
-  const lastTool = contents.findLastIndex((content) => content.type === "tool")
-
-  const commentary = contents.filter(
-    (content, index) =>
-      content.type === "text" &&
-      (content.native?.phase === "commentary" || (content.native?.phase !== "final_answer" && index < lastTool)),
-  )
-
-  const texts = contents.filter((content) => content.type === "text" && visible(content))
-
-  if (!settled || texts.some((content) => !commentary.includes(content))) return commentary
-
-  return commentary.filter((content) => content !== texts.at(-1))
 }
 
 /**
@@ -755,9 +746,8 @@ function launches(
     key !== undefined &&
     group.refs.some((ref) => {
       const content = resolveContent(messageByID.get(ref.messageID), ref.partID)
-      const launch = content?.type === "tool" && toolRule(content).layout === "event" ? toolEvent(content) : undefined
 
-      return launch !== undefined && workKey(launch) === key
+      return content?.type === "tool" && launchOf(content)?.key === key
     })
   )
 }
@@ -765,7 +755,7 @@ function launches(
 function noticeGroup(detail: TimelineDetail, message: SessionMessageInfo, event?: TimelineEvent) {
   if (event) return event.kind === "subagent" ? ("subagent" as const) : ("events" as const)
 
-  return noticePlacement(detail, message) === "grouped" ? ("context" as const) : undefined
+  return placeNotice(message, detail, "next") === "grouped" ? ("context" as const) : undefined
 }
 
 export function reuseTimelineRows(previous: TimelineRow.TimelineRow[] | undefined, rows: TimelineRow.TimelineRow[]) {
@@ -915,7 +905,7 @@ function groupPartKey(ref: PartRef) {
 
 function groupContent(
   items: { messageID: string; partID: string; content: Content }[],
-  detail: TimelineDetail,
+  place: Input["place"],
   commentary: ReadonlySet<Content>,
 ): PartGroup[] {
   const groups: PartGroup[] = []
@@ -938,8 +928,11 @@ function groupContent(
     adjacent = undefined
   }
 
-  items.forEach((item) => {
-    const type = contentGroup(detail, item.content, commentary)
+  const placed = items.map((item) => place(item.content, commentary.has(item.content)))
+
+  items.forEach((item, index) => {
+    const group = placed[index]!.group
+    const type = group === "part" ? undefined : group
 
     if (type === "subagent") {
       flush()

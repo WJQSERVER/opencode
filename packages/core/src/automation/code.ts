@@ -11,6 +11,7 @@ import type { SessionMessage } from "../session/message.js"
 import type { SessionSchema } from "../session/schema.js"
 import { Tool } from "../tool.js"
 import { McpTool } from "../tool/mcp.js"
+import { defaultCodeMode } from "../tool/runtime.js"
 import { Wildcard } from "../util/wildcard.js"
 import { type Invocation, matchesAuthor } from "./author.js"
 import type { AutomationEvent } from "./event.js"
@@ -38,14 +39,11 @@ export function handoffOutput(delivery: string, logs?: string) {
 const FORBIDDEN_TOOLS = new Set([
   // Approving the shell tool unattended would approve every command, not a particular command.
   "shell",
-  "opencode.automation_create",
-  "opencode.automation_pause",
-  "opencode.automation_resume",
-  "opencode.automation_delete",
-  "opencode.session_move",
-  "opencode.session_rename",
-  "opencode.worktree_create",
-  "opencode.worktree_remove",
+  "automation.create",
+  "automation.pause",
+  "automation.resume",
+  "automation.delete",
+  "opencode.session.move",
 ])
 
 export interface RunInput {
@@ -134,9 +132,7 @@ const resolveTools = Effect.fnUntraced(function* (paths: ReadonlyArray<string>) 
   const registered = yield* tools.list()
   const actions = new Set<string>()
   for (const path of paths) {
-    const found = registered.find(
-      (item) => item.options?.codemode !== false && CodeModeTool.qualifiedName(item) === path,
-    )
+    const found = registered.find((item) => defaultCodeMode(item) && CodeModeTool.qualifiedName(item) === path)
     if (!found) return yield* Effect.fail(`Unknown Code Mode tool: ${path}`)
     actions.add(found.options?.permission ?? found.id)
   }
