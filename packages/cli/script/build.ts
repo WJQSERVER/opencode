@@ -165,6 +165,21 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
       }))
     },
   }
+  // The machine link's Iroh binding: this target's native package is embedded, and a target with none (Intel Macs)
+  // gets `undefined`, which the server takes as Iroh being unavailable.
+  const irohPackage =
+    item.os === "darwin" && item.arch === "x64"
+      ? undefined
+      : `@number0/iroh-${item.os}-${item.arch}${item.os === "linux" ? `-${item.abi === "musl" ? "musl" : "gnu"}` : item.os === "win32" ? "-msvc" : ""}`
+  const irohBindingPlugin: BunPlugin = {
+    name: "iroh-binding",
+    setup(build) {
+      build.onLoad({ filter: /machine[/\\]iroh-binding\.ts$/ }, () => ({
+        contents: `export default async () => ${irohPackage ? `require(${JSON.stringify(irohPackage)})` : "undefined"}`,
+        loader: "js",
+      }))
+    },
+  }
   const target = targetName(item)
   // Platform package directories and names must stay in lockstep with packages/cli/script/pack.ts,
   // which derives the directory from the package name minus its scope.
@@ -178,6 +193,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
       appAssetsPlugin,
       solidPlugin,
       parcelWatcherPlugin,
+      irohBindingPlugin,
       opencodePtyPlugin,
       pluginRuntimePlugin,
       wsReexportPlugin,

@@ -16,7 +16,7 @@ import { AssistantReasoningContent } from "../../message/message-content"
 import {
   CurrentReadToolGroup,
   currentSkillName,
-  displayDirectory,
+  displayFolder,
   scrollParent,
   toolInput,
   toolMetadata,
@@ -25,7 +25,7 @@ import {
 import { TimelineEventRow } from "../event-row"
 import { toolEvent, workKey, type TimelineEvent } from "../events"
 import { toolRule } from "../rules"
-import { toolStopped } from "../../timeline/facts"
+import { sameFileFact, toolStopped } from "../../timeline/facts"
 import { activityLabel, activityText, usedLabel } from "./activity-label"
 import { FileGroup } from "./file-group"
 import { ThoughtRow } from "./thought"
@@ -219,6 +219,20 @@ export function ContextGroup(props: {
                     return !Array.isArray(value) && value.type === "reasoning" ? value : undefined
                   })
 
+                  // A change keeps its card while progress reports rebuild the list around it.
+                  const file = createMemo(
+                    () => {
+                      const value = item()
+
+                      return !Array.isArray(value) && value.type === "file" ? value : undefined
+                    },
+                    undefined,
+                    {
+                      equals: (previous, next) =>
+                        previous === next || (!!previous && !!next && sameFileFact(previous.file, next.file)),
+                    },
+                  )
+
                   const callback = createMemo(() => {
                     const value = item()
 
@@ -244,8 +258,16 @@ export function ContextGroup(props: {
                             <Show
                               when={work()}
                               fallback={
-                                <Show when={callback()}>
-                                  {(part) => <div data-slot="context-tool-group-item">{part().render()}</div>}
+                                <Show
+                                  when={file()}
+                                  keyed
+                                  fallback={
+                                    <Show when={callback()}>
+                                      {(part) => <div data-slot="context-tool-group-item">{part().render()}</div>}
+                                    </Show>
+                                  }
+                                >
+                                  {(part) => <div data-slot="context-tool-group-item">{part.render()}</div>}
                                 </Show>
                               }
                             >
@@ -533,7 +555,7 @@ function workEvents(parts: ActivityGroupPart[]) {
 function searchTrigger(tool: SessionMessageAssistantTool, i18n: UiI18n) {
   const input = toolInput(currentToolInput(tool))
   const metadata = toolMetadata(currentToolMetadata(tool))
-  const subtitle = displayDirectory(input.path ?? "/")
+  const subtitle = displayFolder(input.path)
   const name = toolRule(tool).name
 
   if (name === "list") return { title: i18n.t("ui.tool.list"), subtitle, args: [], count: undefined }

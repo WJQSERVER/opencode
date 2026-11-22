@@ -168,7 +168,7 @@ export const CodeActionInput = Schema.Struct({
   type: Schema.tag("code"),
   code: Schema.String.check(Schema.isMinLength(1)).annotate({
     description: [
-      "Code Mode JavaScript run on each trigger with no model (no fetch; 30s, 20 tool calls, 32 KB output cap).",
+      "Code Mode JavaScript run on each trigger with no model (32 KB output cap).",
       'Call tools statically as tools.<ns>.<tool>(...) or tools["ns-name"].tool(...); each is authorized once at creation to run unattended.',
       "Receives input = { state, now, runs, args } (also globals): state starts null, now is epoch ms, runs counts earlier runs.",
       "Event triggers also receive input.event = { id, timestamp, data }; data follows the event type's payloadSchema.",
@@ -200,7 +200,7 @@ export const Request = Schema.Struct({
   name: Schema.String.check(Schema.isMinLength(1)).annotate({ description: "A short label shown in lists." }),
   trigger: Trigger.annotate({
     description:
-      'When it runs: { type: "at", at: "in 20 minutes" | "2026-10-27T09:00" }, { type: "every", every: "1 hour" } or { type: "cron", cron: "0 9 * * 1-5" }, each with an optional tz. Or { type: "event", server, event, args? } for a connected MCP server advertising push delivery (requires mcp_events).',
+      'When it runs: { type: "at", at: "in 20 minutes" | "2026-10-27T09:00" }, { type: "every", every: "1 hour" } or { type: "cron", cron: "0 9 * * 1-5" }, each with an optional tz. Or { type: "event", server, event, args? } for a connected MCP server advertising push delivery.',
   }),
   action: ActionInput.annotate({
     description:

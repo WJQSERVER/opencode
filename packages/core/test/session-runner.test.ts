@@ -5492,6 +5492,60 @@ describe("SessionRunnerLLM", () => {
     expect(s.requests).toHaveLength(2)
   })
 
+  scenario(
+    "records and runs a top-level call to a Code Mode tool as the execute program it should have been",
+    function* (s) {
+      const registry = yield* Tool.Service
+      yield* transformTools(
+        registry,
+        {
+          echo: {
+            name: "echo",
+            description: "Echo text",
+            input: Schema.Struct({ text: Schema.String }),
+            output: Schema.Struct({ text: Schema.String }),
+            execute: ({ text }) => Effect.succeed({ output: { text }, content: text }),
+          },
+        },
+        { namespace: "acme" },
+      )
+      yield* s.admit("Call echo directly")
+
+      const id = "call-echo"
+      yield* s.llm.push(
+        TestLLM.toolCalls(
+          LLMEvent.toolInputStart({ id, name: "acme.echo" }),
+          LLMEvent.toolInputDelta({ id, name: "acme.echo", text: '{"text":"hi"}' }),
+          LLMEvent.toolInputEnd({ id, name: "acme.echo" }),
+          LLMEvent.toolCall({ id, name: "acme.echo", input: { text: "hi" } }),
+        ),
+      )
+      // A step that finishes without output is retried after a delay in this fork (covered by its own test), so
+      // reply with text here: this test is about the top-level Code Mode call, not the empty-reply retry clock.
+      yield* s.llm.always(TestLLM.text("Done", "text-done"))
+      yield* s.resume
+
+      const code = 'return await tools.acme.echo({"text":"hi"})'
+      expect(yield* s.context).toMatchObject([
+        Expected.user("Call echo directly"),
+        Expected.assistant({}, [
+          Expected.completedTool(
+            { id, name: "execute" },
+            {
+              input: { code },
+              metadata: { toolCalls: [{ tool: "acme.echo", input: { text: "hi" }, status: "completed" }] },
+            },
+          ),
+        ]),
+        Expected.assistant({}, [Expected.text("Done")]),
+      ])
+      // The next request replays an ordinary execute call.
+      expect(JSON.stringify(s.requests[1]?.messages)).toContain(JSON.stringify(code))
+      expect(JSON.stringify(s.requests[1]?.messages)).not.toContain('acme.echo"')
+      expect(s.requests).toHaveLength(2)
+    },
+  )
+
   scenario("durably settles local tool failures before continuing", function* (s) {
     yield* s.admit("Call missing")
 

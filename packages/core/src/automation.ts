@@ -51,7 +51,6 @@ import { AutomationTable } from "./automation/sql.js"
 import { Config } from "./config.js"
 import { Database } from "./database/database.js"
 import { FileSystem } from "./filesystem.js"
-import { Flag } from "./flag.js"
 import { Instance } from "./instance/service.js"
 import { KVTable } from "./kv/sql.js"
 import { Location } from "./location.js"
@@ -87,7 +86,7 @@ export class InvalidError extends Schema.TaggedError<InvalidError>()("Automation
 
 export class DisabledError extends Schema.TaggedError<DisabledError>()("Automation.DisabledError", {}) {
   override get message() {
-    return "Automations are disabled; set experimental.automations in config"
+    return "Automations are disabled. Set automations to true in config to enable them."
   }
 }
 
@@ -106,7 +105,7 @@ export interface Interface {
   readonly pause: (id: ID) => Effect.Effect<Info, NotFoundError>
   readonly resume: (id: ID) => Effect.Effect<Info, NotFoundError>
   readonly remove: (id: ID) => Effect.Effect<void, NotFoundError>
-  /** Whether experimental.automations is on in the config of `directory`. */
+  /** Whether automations are enabled in the config of `directory`. */
   readonly enabled: (directory: string) => Effect.Effect<boolean, FileSystem.DirectoryNotFoundError>
   /** Runs every automation that is due now, at most once each. */
   readonly tick: Effect.Effect<void>
@@ -130,7 +129,7 @@ const LATE_AFTER = MINUTE
 const MAX_SLEEP = 30_000
 const LEADER_KEY = "automation:leader"
 const LEADER_TTL = 2 * MAX_SLEEP
-/** How long a due automation waits before its location's flag is read again, while automations are off there. */
+/** How long a due automation waits before reading config again while automations are disabled there. */
 const DISABLED_RETRY = HOUR
 /** How long an automation whose prompt failed waits before trying again. */
 const FAILED_RETRY = 5 * MINUTE
@@ -299,12 +298,9 @@ const layer = Layer.effect(
     const settings = (directory: string) =>
       Effect.gen(function* () {
         const config = yield* Config.Service
-        const flags = yield* Flag.Service
         const entries = yield* config.entries()
-        const resolved = flags.resolve(entries)
         return {
-          enabled: resolved.automations.enabled,
-          events: resolved.mcp_events.enabled,
+          enabled: Config.latest(entries, "automations") ?? true,
           timezone: Config.latest(entries, "timezone"),
         }
       }).pipe(inDirectory(directory))
@@ -366,11 +362,7 @@ const layer = Layer.effect(
       if (event && row.event_position)
         return {
           ...(done ? { status: "done" as const } : {}),
-          event_position: {
-            ...row.event_position,
-            cursor: event.cursor,
-            id: event.eventId,
-          },
+          event_position: { ...row.event_position, cursor: event.position.cursor },
         }
       const next = following(row, ended)
       return done || finished(row, next) ? { status: "done" as const, next_due_at: null } : { next_due_at: next }
@@ -630,7 +622,7 @@ const layer = Layer.effect(
         effect.pipe(Effect.catchTag("Automation.InvalidError", (error) => pauseWith(row, now, error.reason))),
     )
 
-    /** Runs one due automation, after the checks all actions share: leadership, expiry and the flag. */
+    /** Runs one due automation after checking leadership, expiry and whether automations are enabled. */
     const runDue = Effect.fnUntraced(function* (row: Row, now: number) {
       const due = row.next_due_at
       if (due === null) return
@@ -647,8 +639,8 @@ const layer = Layer.effect(
         })
       }
       if (!(yield* settings(row.directory)).enabled) {
-        // Reading the flag boots the location, so check again in an hour rather than every tick. The row keeps its
-        // due time, so once the flag is back on it catches up like any missed slot.
+        // Reading config boots the location, so check again in an hour rather than every tick. The row keeps its
+        // due time, so once automations are enabled it catches up like any missed slot.
         yield* settle(row, { last_outcome: "disabled", retry_at: now + DISABLED_RETRY, time_updated: now })
         return
       }
@@ -785,7 +777,7 @@ const layer = Layer.effect(
     // Re-check the original placement and the resource-specific grant before opening a stream or running an action.
     const checkWatch = Effect.fnUntraced(function* (row: Row, server: string) {
       const config = yield* settings(row.directory)
-      if (!config.enabled || !config.events)
+      if (!config.enabled)
         return yield* new InvalidError({
           reason: "Event automations are disabled",
         })
@@ -845,16 +837,13 @@ const layer = Layer.effect(
           return yield* new InvalidError({
             reason: "No authorized event watch",
           })
-        if (position.cursor === null)
-          return yield* new InvalidError({
-            reason: "No replay cursor; recreate the watch to start from now",
-          })
-        const stream = yield* AutomationEvent.resolve(trigger, position.cursor).pipe(inDirectory(row.directory))
-        // Even a crash before the first heartbeat must not silently turn a restart into a fresh watch.
-        if (position.cursor === undefined) yield* settle(row, { event_position: { ...position, cursor: null } })
+        const stream = yield* AutomationEvent.follow(trigger, { cursor: position.cursor ?? null, seen: [] }).pipe(
+          inDirectory(row.directory),
+        )
         return stream.pipe(
           Stream.takeWhileEffect(
-            Effect.fnUntraced(function* (message) {
+            Effect.fnUntraced(function* (update) {
+              if (update.type === "pending") return true
               const current = yield* find(id)
               const at = yield* Clock.currentTimeMillis
               if (current.status !== "active" || !(yield* claimLeader(at))) return false
@@ -863,38 +852,18 @@ const layer = Layer.effect(
                 return false
               }
               yield* checkWatch(current, trigger.server)
-              if (message.type !== "event") {
+              if (update.type === "position") {
                 yield* settle(current, {
-                  event_position: {
-                    ...position,
-                    ...current.event_position,
-                    cursor: message.cursor,
-                  },
+                  event_position: { ...position, ...current.event_position, cursor: update.position.cursor },
                 })
                 return true
               }
-              if (current.event_position?.id === message.eventId) return true
-              yield* runAction(current, at, message)
+              yield* runAction(current, at, update)
               return (yield* find(id)).status === "active"
             }, delivery.withPermit),
           ),
         )
-      }).pipe(
-        Stream.unwrap,
-        Stream.tapError(
-          Effect.fnUntraced(function* (error) {
-            if (error instanceof AutomationEvent.Disconnected && (yield* find(id)).event_position?.cursor == null)
-              return yield* new InvalidError({ reason: "No replay cursor; recreate the watch to start from now" })
-          }),
-        ),
-        // Only a validated, processed message resets Stream.retry, never opening an empty stream.
-        Stream.retry(
-          Schedule.exponential("1 second").pipe(
-            Schedule.while(({ input, attempt }) => input instanceof AutomationEvent.Disconnected && attempt <= 3),
-          ),
-        ),
-        Stream.runDrain,
-      )
+      }).pipe(Stream.unwrap, Stream.runDrain)
       const run =
         expires === null
           ? open
@@ -1088,10 +1057,6 @@ const layer = Layer.effect(
         if (!config.enabled) return yield* new DisabledError()
         if (input.trigger.type === "event") {
           const trigger = input.trigger
-          if (!config.events)
-            return yield* new InvalidError({
-              reason: "Event automations require experimental.mcp_events",
-            })
           if (!owner || !invocation || owner.location.workspaceID !== undefined)
             return yield* new InvalidError({
               reason: "Create an event automation from a tool call in a local session",
@@ -1110,7 +1075,7 @@ const layer = Layer.effect(
               resources: [trigger.server],
               metadata: { automation: input.name, trigger },
             })
-            yield* AutomationEvent.resolve(trigger).pipe(
+            yield* AutomationEvent.check(trigger).pipe(
               Effect.mapError((error) => new InvalidError({ reason: error.message })),
             )
           }).pipe(inDirectory(directory), Effect.catchTag("FileSystem.DirectoryNotFoundError", missingDirectory))
