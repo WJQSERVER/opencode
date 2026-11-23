@@ -127,6 +127,9 @@ const ModelList: Component<{
     active: "",
     collapsed: {},
   })
+  const [searchText, setSearchText] = createSignal("")
+  let searchTimer: ReturnType<typeof setTimeout> | undefined
+  onCleanup(() => clearTimeout(searchTimer))
 
   const models = createMemo(() => controller.models(store.search))
   const modelGroups = createMemo(() => controller.groups(models()))
@@ -153,9 +156,13 @@ const ModelList: Component<{
   let scrollRef: HTMLDivElement | undefined
 
   const setSearch = (value: string) => {
-    setStore("search", value)
-    const first = visibleModels()[0]
-    setStore("active", first ? modelKey(first) : "")
+    setSearchText(value)
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => {
+      setStore("search", value)
+      const first = visibleModels()[0]
+      setStore("active", first ? modelKey(first) : "")
+    }, 350)
   }
 
   createEffect(
@@ -163,7 +170,9 @@ const ModelList: Component<{
       () => props.open,
       (open) => {
         if (!open) return
-        setSearch("")
+        clearTimeout(searchTimer)
+        setSearchText("")
+        setStore("search", "")
         scrollRef?.scrollTo(0, 0)
       },
     ),
@@ -245,7 +254,7 @@ const ModelList: Component<{
           appearance="base"
           class="!w-full self-stretch"
           placeholder={language.t("dialog.model.search.placeholder")}
-          value={store.search}
+          value={searchText()}
           autofocus={!props.mobile}
           spellcheck={false}
           autocorrect="off"
@@ -275,7 +284,7 @@ const ModelList: Component<{
             }
           }}
           aria-label={language.t("dialog.model.search.placeholder")}
-          showClearButton={!!store.search}
+          showClearButton={!!searchText()}
           clearIcon="close"
           clearLabel={language.t("common.clear")}
           onClearClick={() => setSearch("")}
@@ -1204,6 +1213,8 @@ export function DialogSelectModel(props: { provider?: string; model?: ModelState
           <SearchList
             ref={(handle) => (list = handle)}
             topFade={false}
+            debounceMs={350}
+            windowed
             onScroll={onListScroll}
             // The flyout follows the highlight while the keyboard drives it, starting with the row the dialog opens on.
             onActive={(row) => dispatch({ type: "highlighted", id: row?.id })}

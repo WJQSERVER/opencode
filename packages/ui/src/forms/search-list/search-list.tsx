@@ -3,6 +3,7 @@ import {
   createEffect,
   createMemo,
   createSelector,
+  createSignal,
   For,
   type JSX,
   on,
@@ -11,6 +12,7 @@ import {
   Show,
   useContext,
 } from "solid-js"
+
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { Icon } from "@opencode/ui/icon"
 import { MenuScroll } from "../../components/menu-scroll"
@@ -50,6 +52,9 @@ export type SearchListHandle<T> = {
 
 const QueryContext = createContext<() => string>(() => "")
 
+/** How many extra rows to keep mounted around the viewport, so scrolling does not blank out between renders. */
+const OVERSCAN = 8
+
 /**
  * A search field over sectioned results. Rows that share a `section` key list together under one header, which sticks
  * while its rows scroll beneath it until the next header pushes it away. The first row is active until the user picks
@@ -86,6 +91,10 @@ export function SearchList<T>(props: {
   /** Where the results start scrolled each time they mount, such as a position kept from an earlier visit. */
   scrollTop?: number
   onScroll?: (scrollTop: number) => void
+  /** Delays `onQuery` by this many ms while the field keeps showing every keystroke. */
+  debounceMs?: number
+  /** Renders only rows near the viewport. Requires the CSS-fixed 36px rows and 28px section headers. */
+  windowed?: boolean
   onSelect: (item: T) => void
   onActive?: (item: T | undefined) => void
   /** Runs before the list's own keys; call `preventDefault` to claim one. */
@@ -99,6 +108,65 @@ export function SearchList<T>(props: {
   let viewport: HTMLDivElement | undefined
   let results: HTMLDivElement | undefined
   let fade: HTMLDivElement | undefined
+
+  const [text, setText] = createSignal(props.query)
+  const debounce = () => props.debounceMs ?? 0
+  let queryTimer: ReturnType<typeof setTimeout> | undefined
+  createEffect(
+    on(
+      () => props.query,
+      (value) => {
+        clearTimeout(queryTimer)
+        if (value !== text()) setText(value)
+      },
+    ),
+  )
+  onCleanup(() => clearTimeout(queryTimer))
+
+  // Windowing measures the real layout once after the first full render: the model dialog uses display:contents
+  // sections, 32px rows and much taller headers than the base list, so fixed arithmetic put rows off screen.
+  const [metrics, setMetrics] = createSignal<{
+    stride: number
+    rowHeight: number
+    headerHeight: number
+    leading: number
+    after: number
+  } | null>(null)
+  const windowed = () => !!props.windowed && metrics() !== null
+  const [scrollTop, setScrollTop] = createSignal(0)
+  const [viewportHeight, setViewportHeight] = createSignal(0)
+
+  const measureWindow = () => {
+    if (!props.windowed || !results) return
+    const sections = [...results.querySelectorAll<HTMLElement>('[data-slot="search-list-section"]')]
+
+    for (let index = 0; index < sections.length; index++) {
+      const rows = [...sections[index].querySelectorAll<HTMLElement>('[data-slot="search-list-row"]')]
+
+      if (rows.length === 0) continue
+      const header = sections[index].querySelector<HTMLElement>('[data-slot="search-list-header"]')
+      const first = rows[0].getBoundingClientRect()
+      const rowHeight = first.height
+      const stride = rows.length > 1 ? rows[1].getBoundingClientRect().top - first.top : rowHeight + 2
+      const headerHeight = header?.offsetHeight ?? 0
+      const leading = header ? first.top - header.getBoundingClientRect().bottom : 0
+      const lastEnd = first.top + (rows.length - 1) * stride + rowHeight
+      const next = sections
+        .slice(index + 1)
+        .map((section) => (section.querySelector('[data-slot="search-list-header"]') ?? section.querySelector('[data-slot="search-list-row"]'))?.getBoundingClientRect().top)
+        .find((top) => top !== undefined)
+
+      setMetrics({
+        stride,
+        rowHeight,
+        headerHeight,
+        leading,
+        after: next === undefined ? 0 : Math.max(0, next - lastEnd),
+      })
+
+      return
+    }
+  }
 
   const sectionOf = (item: T) => props.section?.(item) ?? ""
   const open = () => props.open ?? true
@@ -121,6 +189,48 @@ export function SearchList<T>(props: {
   const rows = createMemo(() => [...groups().values()].flat())
   const byKey = createMemo(() => new Map(rows().map((item) => [props.key(item), item] as const)))
   const sectionKeys = createMemo<string[]>((previous) => stable(previous, [...groups().keys()]))
+
+  createEffect(
+    on(
+      sectionKeys,
+      () => {
+        if (!props.windowed || metrics()) return
+        const frame = requestAnimationFrame(() => requestAnimationFrame(measureWindow))
+        onCleanup(() => cancelAnimationFrame(frame))
+      },
+    ),
+  )
+
+  const layout = createMemo(() => {
+    const m = metrics()
+    const stride = m?.stride ?? 34
+    const headerHeight = m?.headerHeight ?? 0
+    const leading = m?.leading ?? 0
+    const after = m?.after ?? 2
+    let running = 0
+
+    return [...groups().entries()].map(([key, items]) => {
+      const hasHeader = !!props.header && items.length > 0
+      const start = running + (hasHeader ? headerHeight + leading : 0)
+
+      running += (hasHeader ? headerHeight + leading : 0) + Math.max(0, items.length - 1) * stride + (m?.rowHeight ?? stride - 1) + after
+
+      return { key, items, stride, start, after }
+    })
+  })
+
+  const windowedSections = createMemo(() => {
+    const top = scrollTop()
+    const bottom = top + (viewportHeight() || 600)
+
+    return layout().map((section) => {
+      const count = section.items.length
+      const from = Math.min(count, Math.max(0, Math.floor((top - section.start) / section.stride) - OVERSCAN))
+      const to = Math.max(from, Math.min(count, Math.ceil((bottom - section.start) / section.stride) + OVERSCAN))
+
+      return { ...section, from, to }
+    })
+  })
 
   const typeahead = createTypeahead<T>({
     items: rows,
@@ -145,6 +255,26 @@ export function SearchList<T>(props: {
     if (!viewport) return
 
     if (item === undefined || item === rows()[0]) return viewport.scrollTo({ top: 0 })
+
+    if (windowed() && !document.getElementById(typeahead.optionID(item))) {
+      const section = layout().find((candidate) => candidate.items.includes(item))
+      const index = section?.items.indexOf(item) ?? -1
+
+      if (section && index >= 0) {
+        const top = section.start + index * section.stride
+        const bottom = top + section.stride - 1
+        const header = document.getElementById(`${typeahead.listID}-section-${encodeURIComponent(section.key)}`)
+          ?.querySelector<HTMLElement>('[data-slot="search-list-header"]')?.offsetHeight ?? 0
+        const visibleTop = viewport.scrollTop + header
+
+        if (top < visibleTop) return viewport.scrollTo({ top: Math.max(0, top - header - 4) })
+        if (bottom > viewport.scrollTop + viewport.clientHeight)
+          return viewport.scrollTo({ top: bottom - viewport.clientHeight + 4 })
+
+        return
+      }
+    }
+
     document.getElementById(typeahead.optionID(item))?.scrollIntoView({ block: "nearest" })
   }
 
@@ -193,6 +323,7 @@ export function SearchList<T>(props: {
   const measure = () => {
     if (!viewport) return
     const scroll = viewport.scrollTop
+    setViewportHeight(viewport.clientHeight)
     maxScroll = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
 
     if (topFade()) {
@@ -217,9 +348,7 @@ export function SearchList<T>(props: {
   createEffect(
     on(
       rows,
-      () => {
-        if (topFade()) measure()
-      },
+      () => measure(),
       { defer: true },
     ),
   )
@@ -301,7 +430,12 @@ export function SearchList<T>(props: {
     onInput: (event) => {
       // A new query starts again from its first row.
       choose(undefined)
-      props.onQuery(event.currentTarget.value)
+      const value = event.currentTarget.value
+
+      setText(value)
+      clearTimeout(queryTimer)
+      if (debounce()) queryTimer = setTimeout(() => props.onQuery(value), debounce())
+      else props.onQuery(value)
     },
     onKeyDown,
   }
@@ -341,7 +475,7 @@ export function SearchList<T>(props: {
             <div data-slot="search-list-search">
               <TextInput
                 {...field}
-                value={props.query}
+                value={text()}
                 autofocus
                 autocomplete="off"
                 autocorrect="off"
@@ -364,6 +498,7 @@ export function SearchList<T>(props: {
             viewportRef={(element) => (viewport = element)}
             onScroll={(event) => {
               const top = event.currentTarget.scrollTop
+              setScrollTop(top)
               // Callers read clean layout before edge-fade properties mutate the viewport.
               props.onScroll?.(top)
               edges(top)
@@ -382,11 +517,22 @@ export function SearchList<T>(props: {
             >
               <For each={sectionKeys()}>
                 {(section) => {
-                  const keys = createMemo<string[]>((previous) =>
+                  const window = createMemo(() =>
+                    windowed() ? windowedSections().find((entry) => entry.key === section) : undefined,
+                  )
+                  const all = createMemo<string[]>((previous) =>
                     stable(previous, (groups().get(section) ?? []).map(props.key)),
                   )
+                  const keys = createMemo<string[]>((previous) => {
+                    const range = window()
 
-                  const first = () => byKey().get(keys()[0] ?? "")
+                    return stable(
+                      previous,
+                      range ? all().slice(range.from, range.to) : all(),
+                    )
+                  })
+
+                  const first = () => byKey().get(all()[0] ?? "")
 
                   const header = createMemo(() =>
                     props.header && first() !== undefined ? props.header(first()!) : undefined,
@@ -395,7 +541,13 @@ export function SearchList<T>(props: {
                   const id = `${typeahead.listID}-section-${encodeURIComponent(section)}`
 
                   return (
-                    <div data-slot="search-list-section" role="group" aria-labelledby={header() ? id : undefined}>
+                    <div
+                      data-slot="search-list-section"
+                      data-key={section}
+                      data-windowed={windowed() ? "" : undefined}
+                      role="group"
+                      aria-labelledby={header() ? id : undefined}
+                    >
                       <Show when={header()}>
                         {(content) => (
                           <div id={id} data-slot="search-list-header">
@@ -403,14 +555,30 @@ export function SearchList<T>(props: {
                           </div>
                         )}
                       </Show>
-                      <For each={keys()}>
-                        {(key) => {
-                          // A row that is leaving keeps its last item until it is removed.
-                          const item = createMemo<T>((previous) => byKey().get(key) ?? previous, byKey().get(key)!)
+                      <Show when={window() && window()!.from > 0}>
+                        <div
+                          data-slot="search-list-spacer"
+                          style={{ height: `${window()!.from * window()!.stride}px` }}
+                        />
+                      </Show>
+                      <div data-slot="search-list-window-rows">
+                        <For each={keys()}>
+                          {(key) => {
+                            // A row that is leaving keeps its last item until it is removed.
+                            const item = createMemo<T>((previous) => byKey().get(key) ?? previous, byKey().get(key)!)
 
-                          return props.children(item, row(key, item))
-                        }}
-                      </For>
+                            return props.children(item, row(key, item))
+                          }}
+                        </For>
+                      </div>
+                      <Show when={window() && window()!.to < all().length}>
+                        <div
+                          data-slot="search-list-spacer"
+                          style={{
+                            height: `${(all().length - window()!.to) * window()!.stride + window()!.after}px`,
+                          }}
+                        />
+                      </Show>
                     </div>
                   )
                 }}

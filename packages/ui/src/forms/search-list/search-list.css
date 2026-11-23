@@ -152,6 +152,21 @@
     user-select: none;
   }
 
+  [data-slot="search-list-window-rows"] {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  [data-slot="search-list-section"][data-windowed] {
+    gap: 0;
+  }
+
+  [data-slot="search-list-spacer"] {
+    flex-shrink: 0;
+    pointer-events: none;
+  }
+
   [data-slot="search-list-row"] {
     display: flex;
     width: 100%;
