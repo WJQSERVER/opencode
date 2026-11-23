@@ -1237,6 +1237,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "Valitse, miten istunnot luetellaan sivupalkissa. Koskee vain sivuvälilehtiä.",
   "settings.experimental.sidebarOrganize.recent": "Viimeaikaiset",
+  "settings.experimental.sidebarOrganize.projects": "Projektit",
   "settings.experimental.sidebarOrganize.list": "Yksi luettelo",
   "settings.experimental.sidebarOrganize.customize": "Mukauta",
   "sidebar.organize.openTab": "Avaa välilehti",

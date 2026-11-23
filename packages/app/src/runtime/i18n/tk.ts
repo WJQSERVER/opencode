@@ -1233,6 +1233,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "Sessiýalaryň gapdal panelde nähili sanalýandygyny saýlaň. Diňe gapdal goýmalara degişli.",
   "settings.experimental.sidebarOrganize.recent": "Soňkular",
+  "settings.experimental.sidebarOrganize.projects": "Taslamalar",
   "settings.experimental.sidebarOrganize.list": "Bir sanaw",
   "settings.experimental.sidebarOrganize.customize": "Sazla",
   "sidebar.organize.openTab": "Açyk goýma",

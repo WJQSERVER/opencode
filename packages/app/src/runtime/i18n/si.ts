@@ -1240,6 +1240,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "පැති තීරුවේ සැසි ලැයිස්තුගත කරන ආකාරය තෝරන්න. පැති ටැබ් සඳහා පමණක් අදාළ වේ.",
   "settings.experimental.sidebarOrganize.recent": "මෑත",
+  "settings.experimental.sidebarOrganize.projects": "ව්‍යාපෘති",
   "settings.experimental.sidebarOrganize.list": "එක් ලැයිස්තුවක්",
   "settings.experimental.sidebarOrganize.customize": "අභිරුචිකරණය කරන්න",
   "sidebar.organize.openTab": "විවෘත ටැබය",

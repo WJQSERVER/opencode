@@ -1328,6 +1328,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "Elige cómo se listan las sesiones en la barra lateral. Solo se aplica a las pestañas laterales.",
   "settings.experimental.sidebarOrganize.recent": "Recientes",
+  "settings.experimental.sidebarOrganize.projects": "Proyectos",
   "settings.experimental.sidebarOrganize.list": "Una lista",
   "settings.experimental.sidebarOrganize.customize": "Personalizar",
   "sidebar.organize.openTab": "Abrir pestaña",

@@ -1313,6 +1313,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "Oturumların kenar çubuğunda nasıl listeleneceğini seçin. Yalnızca yan sekmelerde geçerlidir.",
   "settings.experimental.sidebarOrganize.recent": "Son oturumlar",
+  "settings.experimental.sidebarOrganize.projects": "Projeler",
   "settings.experimental.sidebarOrganize.list": "Tek liste",
   "settings.experimental.sidebarOrganize.customize": "Özelleştir",
   "sidebar.organize.openTab": "Açık sekme",

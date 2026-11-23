@@ -1282,6 +1282,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "Izberite, kako so seje navedene v stranski vrstici. Velja samo za stranske zavihke.",
   "settings.experimental.sidebarOrganize.recent": "Nedavno",
+  "settings.experimental.sidebarOrganize.projects": "Projekti",
   "settings.experimental.sidebarOrganize.list": "En seznam",
   "settings.experimental.sidebarOrganize.customize": "Prilagodi",
   "sidebar.organize.openTab": "Odpri zavihek",

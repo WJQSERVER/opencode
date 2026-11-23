@@ -1245,6 +1245,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "چنو کہ سائڈبار وچ سیشن کیویں دسے جان۔ صرف پاسے دیاں ٹیباں تے لاگو ہوندا اے۔",
   "settings.experimental.sidebarOrganize.recent": "حالیہ",
+  "settings.experimental.sidebarOrganize.projects": "پروجیکٹ",
   "settings.experimental.sidebarOrganize.list": "اک فہرست",
   "settings.experimental.sidebarOrganize.customize": "اپنی مرضی دا بناؤ",
   "sidebar.organize.openTab": "ٹیب کھولو",

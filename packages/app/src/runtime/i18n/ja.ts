@@ -1249,6 +1249,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "サイドバーでのセッションの表示方法を選択します。サイドタブでのみ適用されます。",
   "settings.experimental.sidebarOrganize.recent": "最近",
+  "settings.experimental.sidebarOrganize.projects": "プロジェクト",
   "settings.experimental.sidebarOrganize.list": "単一リスト",
   "settings.experimental.sidebarOrganize.customize": "カスタマイズ",
   "sidebar.organize.openTab": "開いているタブ",

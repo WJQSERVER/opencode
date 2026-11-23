@@ -1296,6 +1296,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "Wybierz sposób wyświetlania sesji na pasku bocznym. Dotyczy tylko kart bocznych.",
   "settings.experimental.sidebarOrganize.recent": "Ostatnie",
+  "settings.experimental.sidebarOrganize.projects": "Projekty",
   "settings.experimental.sidebarOrganize.list": "Jedna lista",
   "settings.experimental.sidebarOrganize.customize": "Dostosuj",
   "sidebar.organize.openTab": "Otwórz kartę",

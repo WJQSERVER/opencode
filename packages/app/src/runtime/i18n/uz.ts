@@ -1251,6 +1251,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "Sessiyalar yon panelda qanday ro‘yxatlanishini tanlang. Faqat yon varaqlarga taalluqli.",
   "settings.experimental.sidebarOrganize.recent": "Oxirgilar",
+  "settings.experimental.sidebarOrganize.projects": "Loyihalar",
   "settings.experimental.sidebarOrganize.list": "Yagona ro‘yxat",
   "settings.experimental.sidebarOrganize.customize": "Moslash",
   "sidebar.organize.openTab": "Ochiq varaq",

@@ -1251,6 +1251,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "Válassza ki, hogyan jelenjenek meg a munkamenetek az oldalsávban. Csak oldalsó lapoknál érvényes.",
   "settings.experimental.sidebarOrganize.recent": "Legutóbbiak",
+  "settings.experimental.sidebarOrganize.projects": "Projektek",
   "settings.experimental.sidebarOrganize.list": "Egy lista",
   "settings.experimental.sidebarOrganize.customize": "Testreszabás",
   "sidebar.organize.openTab": "Megnyitott lap",

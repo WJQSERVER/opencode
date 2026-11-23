@@ -1284,6 +1284,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.description":
     "Vyberte, ako sa relácie zobrazujú v bočnom paneli. Platí iba pre bočné karty.",
   "settings.experimental.sidebarOrganize.recent": "Nedávne",
+  "settings.experimental.sidebarOrganize.projects": "Projekty",
   "settings.experimental.sidebarOrganize.list": "Jeden zoznam",
   "settings.experimental.sidebarOrganize.customize": "Prispôsobiť",
   "sidebar.organize.openTab": "Otvoriť kartu",

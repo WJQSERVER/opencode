@@ -1222,6 +1222,7 @@ export const dict = {
   "settings.experimental.row.sidebarOrganize.title": "ארגון סרגל צד אנכי",
   "settings.experimental.row.sidebarOrganize.description": "בחר כיצד הפעלות יוצגו בסרגל הצד. חל רק על כרטיסיות צד.",
   "settings.experimental.sidebarOrganize.recent": "אחרונות",
+  "settings.experimental.sidebarOrganize.projects": "פרויקטים",
   "settings.experimental.sidebarOrganize.list": "רשימה אחת",
   "settings.experimental.sidebarOrganize.customize": "התאמה אישית",
   "sidebar.organize.openTab": "פתח כרטיסייה",
