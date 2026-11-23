@@ -21,7 +21,7 @@ import { popularProviders } from "@/providers/catalog/providers"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { SettingsList } from "@/settings/list"
 import { SettingsRow } from "@/settings/row"
-import { CONSOLE_GROUP_KEY, consoleModelGroup, ProviderModelSections } from "@/providers/models/provider-group"
+import { CONSOLE_GROUP_KEY, consoleModelGroup, ProviderModelSections, ProviderVisibilityMenu } from "@/providers/models/provider-group"
 import { SettingsSearchEmpty } from "@/settings/search-empty"
 import { SettingsSearchField } from "@/settings/search-field"
 import { settingsScroller } from "@/settings/scroller"
@@ -248,6 +248,12 @@ export const SettingsModels: Component<{
               managed={managed()}
               expanded={expanded}
               disabled={searching()}
+              action={(group) => (
+                <ProviderVisibilityMenu
+                  disabled={searching()}
+                  setVisibility={(visible) => setProviderVisibility(group.category, visible)}
+                />
+              )}
               onExpandedChange={(key, value) => setStore("collapsed", key, !value)}
               onSetVisibility={setProviderVisibility}
               ref={(providerID, element) => {

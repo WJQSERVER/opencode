@@ -222,6 +222,32 @@ export function ProviderModelSections<T extends ModelItem>(props: {
   )
 }
 
+/** One-click enable/disable for every model of a provider, shared by the card and settings-section headers. */
+export function ProviderVisibilityMenu(props: { setVisibility: (visible: boolean) => void; disabled?: boolean }) {
+  const language = useLanguage()
+
+  return (
+    <div class="provider-model-group-actions">
+      <Menu gutter={4} modal={false} placement="bottom-end">
+        <Menu.Trigger
+          as={IconButton}
+          variant="ghost-muted"
+          size="small"
+          icon={<Icon name="outline-dots" />}
+          aria-label={language.t("common.moreOptions")}
+          disabled={props.disabled}
+        />
+        <Menu.Portal>
+          <Menu.Content>
+            <Menu.Item onSelect={() => props.setVisibility(true)}>{language.t("settings.models.enableAll")}</Menu.Item>
+            <Menu.Item onSelect={() => props.setVisibility(false)}>{language.t("settings.models.disableAll")}</Menu.Item>
+          </Menu.Content>
+        </Menu.Portal>
+      </Menu>
+    </div>
+  )
+}
+
 export function ProviderModelGroup(props: {
   provider: ModelProvider
   name?: string
@@ -232,8 +258,6 @@ export function ProviderModelGroup(props: {
   ref?: (element: HTMLElement) => void
   onExpandedChange: (expanded: boolean) => void
 }) {
-  const language = useLanguage()
-
   return (
     <section
       ref={props.ref}
@@ -260,29 +284,7 @@ export function ProviderModelGroup(props: {
           </span>
         </button>
         <Show when={props.onSetVisibility} keyed>
-          {(setVisibility) => (
-            <div class="provider-model-group-actions">
-              <Menu gutter={4} modal={false} placement="bottom-end">
-                <Menu.Trigger
-                  as={IconButton}
-                  variant="ghost-muted"
-                  size="small"
-                  icon={<Icon name="outline-dots" />}
-                  aria-label={language.t("common.moreOptions")}
-                />
-                <Menu.Portal>
-                  <Menu.Content>
-                    <Menu.Item onSelect={() => setVisibility(true)}>
-                      {language.t("settings.models.enableAll")}
-                    </Menu.Item>
-                    <Menu.Item onSelect={() => setVisibility(false)}>
-                      {language.t("settings.models.disableAll")}
-                    </Menu.Item>
-                  </Menu.Content>
-                </Menu.Portal>
-              </Menu>
-            </div>
-          )}
+          {(setVisibility) => <ProviderVisibilityMenu setVisibility={setVisibility} />}
         </Show>
       </h3>
       <Show when={props.expanded}>
