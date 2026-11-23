@@ -1,6 +1,9 @@
 export default {
   "tab.title": "Context",
   "mobile.title": "Usage",
+  "compact.session": "Compact session",
+  "compact.success.title": "Session compacted",
+  "compact.failed.title": "Failed to compact session",
   "usage.tokens": "Tokens",
   "usage.usage": "Context",
   "usage.cost": "Cost",

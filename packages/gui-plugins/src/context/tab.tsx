@@ -210,6 +210,24 @@ export default function SessionContextTab(props: { session: MountedSession }) {
   const exportControllers = new Map<number, AbortController>()
   const exporting = () => selectSessionExporting(exportState(), props.session.key)
 
+  const [compacting, setCompacting] = createSignal(false)
+  const compactSession = () => {
+    const sessionID = props.session.id
+
+    if (!sessionID || compacting()) return
+    setCompacting(true)
+    void Promise.try(() => data().session.compact({ sessionID })).then(
+      () =>
+        showToast({ variant: "success", title: ctx.t("compact.success.title") }),
+      (cause: unknown) =>
+        showToast({
+          variant: "error",
+          title: ctx.t("compact.failed.title"),
+          description: cause instanceof Error ? cause.message : undefined,
+        }),
+    ).finally(() => setCompacting(false))
+  }
+
   const dispatchExport = (event: SessionExportEvent) => {
     const next = transitionSessionExport(exportState(), event)
 
@@ -393,6 +411,18 @@ export default function SessionContextTab(props: { session: MountedSession }) {
       }
     >
       <div data-slot="session-usage-content" class="px-4 pt-4 pb-6 flex flex-col gap-6 md:px-6 md:pb-10 md:gap-10">
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-12-regular text-text-weak">{ctx.t("tab.title")}</div>
+          <Button
+            size="small"
+            variant="ghost"
+            class="gap-1.5 px-2 text-text-weak hover:text-text-base"
+            disabled={!props.session.id || compacting()}
+            onClick={compactSession}
+          >
+            {ctx.t("compact.session")}
+          </Button>
+        </div>
         <div class="grid grid-cols-1 @[32rem]:grid-cols-2 gap-4">
           <For each={stats}>
             {(stat) => <Show when={stat.value()}>{(value) => <Stat label={ctx.t(stat.label)} value={value()} />}</Show>}
