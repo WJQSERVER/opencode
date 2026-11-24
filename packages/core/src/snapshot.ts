@@ -11,6 +11,7 @@ import { Location } from "./location.js"
 import { AbsolutePath, RelativePath } from "./schema.js"
 import { ID } from "@opencode/schema/snapshot"
 import { Hash } from "@opencode/util/hash"
+import { KV } from "./kv.js"
 import { State } from "./state.js"
 
 export { ID }
@@ -74,6 +75,7 @@ const layer = Layer.effect(
   Effect.gen(function* () {
     const fs = yield* FSUtil.Service
     const git = yield* Git.Service
+    const kv = yield* KV.Service
     const global = yield* Global.Service
     const location = yield* Location.Service
     const lifetime = yield* Scope.Scope
@@ -118,6 +120,30 @@ const layer = Layer.effect(
 
     const enabled = () => location.vcs?.type === "git" && state.get().enabled
 
+    // Snapshot trees are content-addressed but know nothing about the branch they were taken from. Keep the ref they
+    // were captured at so a restore can refuse to overwrite work after an external merge, FF or reset moved HEAD.
+    const baseKey = (tree: string) => `snapshot.base:${tree}`
+    type Base = { head: string | null; branch: string | null; at: number }
+    const rememberBase = (tree: string, base: Base) =>
+      kv.get(baseKey(tree)).pipe(
+        Effect.flatMap((existing) => (existing ? Effect.void : kv.set(baseKey(tree), base))),
+        Effect.orDie,
+      )
+    const readBase = (tree: string) =>
+      kv.get(baseKey(tree)).pipe(
+        Effect.map((value): Base | undefined => {
+          if (!value || typeof value !== "object" || Array.isArray(value)) return undefined
+          const record = value as Record<string, unknown>
+          if (typeof record.at !== "number") return undefined
+          return {
+            head: typeof record.head === "string" ? record.head : null,
+            branch: typeof record.branch === "string" ? record.branch : null,
+            at: record.at,
+          }
+        }),
+        Effect.orDie,
+      )
+
     // `objects.pack` takes a cross-process lock, so a run that outlasts the interval never overlaps the next.
     let lastPackCheck = Number.NEGATIVE_INFINITY
     const packWhenDue = Effect.fnUntraced(function* (repository: Git.Repository) {
@@ -140,6 +166,10 @@ const layer = Layer.effect(
           ignores: repo.source,
           maximumUntrackedFileBytes: 2 * 1024 * 1024,
         })
+        const head = yield* git.history.head(repo.source)
+        const branch = yield* git.history.branch(repo.source)
+        yield* rememberBase(tree, { head: head ?? null, branch: branch ?? null, at: Date.now() })
+        yield* Effect.logInfo("snapshot captured", { tree, head, branch, worktree: repo.worktree })
         yield* packWhenDue(repo.snapshotRepository)
         return ID.make(tree)
       }).pipe(
@@ -211,6 +241,23 @@ const layer = Layer.effect(
     const restore = Effect.fn("Snapshot.restore")(function* (input: RestoreInput) {
       if (!enabled()) return yield* new Error({ operation: "restore", message: "Snapshots are disabled" })
       const repo = yield* repository.pipe(Effect.mapError((cause) => failure("restore", cause)))
+      const head = yield* git.history.head(repo.source)
+      const trees = [...new Set([...input.files.values()].map((tree) => String(tree)))]
+      for (const tree of trees) {
+        const base = yield* readBase(tree)
+        // A missing base is an older snapshot from before this guard; allow it with a warning rather than breaking
+        // a pending undo. A known base whose ref moved is refused: restoring it would silently undo external work.
+        if (!base) {
+          yield* Effect.logWarning("snapshot restore without captured ref", { tree })
+          continue
+        }
+        if (base.head && head && base.head !== head)
+          return yield* new Error({
+            operation: "restore",
+            message: `HEAD moved since snapshot (${base.head} -> ${head}); refusing to restore stale files`,
+          })
+      }
+      yield* Effect.logInfo("snapshot restore", { trees, paths: [...input.files.keys()], head })
       yield* git.tree
         .restore({ repository: repo.snapshotRepository, files: yield* plan(repo.worktree, input) })
         .pipe(Effect.mapError((cause) => failure("restore", cause)))
@@ -223,7 +270,7 @@ const layer = Layer.effect(
 export const node = makeLocationNode({
   service: Service,
   layer,
-  deps: [FSUtil.node, Git.node, Global.node, Location.node],
+  deps: [FSUtil.node, Git.node, Global.node, KV.node, Location.node],
 })
 
 export const noopLayer = Layer.succeed(

@@ -79,6 +79,39 @@ describe("Snapshot", () => {
     ),
   )
 
+  testEffect(Layer.empty).live("refuses to restore a snapshot after HEAD moved under it", () =>
+    withTempDir((tmp) =>
+      Effect.gen(function* () {
+        const project = path.join(tmp.path, "project")
+        yield* Effect.promise(async () => {
+          await fs.mkdir(project)
+          await fs.writeFile(path.join(project, "tracked.txt"), "one\n")
+          await initGit(project, true)
+        })
+        const layer = snapshotLayer(tmp.path, project)
+        yield* Effect.gen(function* () {
+          const snapshot = yield* Snapshot.Service
+          const before = yield* snapshot.capture()
+          if (!before) throw new Error("Initial snapshot missing")
+
+          // An external actor advances the checked-out branch without touching the worktree file.
+          yield* Effect.promise(() =>
+            $`git -c user.email=test@opencode.test -c user.name=Test commit --no-gpg-sign --allow-empty -m "external merge"`
+              .cwd(project)
+              .quiet(),
+          )
+
+          const error = yield* snapshot
+            .restore({ files: new Map([[RelativePath.make("tracked.txt"), before]]) })
+            .pipe(Effect.flip)
+          expect(error._tag).toContain("Error")
+          expect(String(error.message)).toContain("HEAD moved since snapshot")
+          expect(yield* read(path.join(project, "tracked.txt"))).toBe("one\n")
+        }).pipe(Effect.provide(layer))
+      }),
+    ),
+  )
+
   testEffect(Layer.empty).live("captures and restores Location-scoped changes", () =>
     withTempDir((tmp) =>
       Effect.gen(function* () {
