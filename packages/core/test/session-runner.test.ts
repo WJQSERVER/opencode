@@ -6433,6 +6433,31 @@ describe("SessionRunnerLLM", () => {
     ])
   })
 
+  scenario("retries a reasoning-only step whose tool-calls finish made no call", function* (s) {
+    yield* s.admit("Retry reasoning-only finish")
+    // A weak provider emits reasoning, claims tool-calls, then produces no tool call at all.
+    yield* s.llm.push(
+      TestLLM.toolCalls(
+        LLMEvent.reasoningStart({ id: "think-only" }),
+        LLMEvent.reasoningDelta({ id: "think-only", text: "I should call a tool" }),
+        LLMEvent.reasoningEnd({ id: "think-only", text: "I should call a tool" }),
+      ),
+    )
+    yield* s.llm.push(TestLLM.text("Recovered", "reasoning-empty-success"))
+
+    const scheduled = yield* subscribeRetries(s)
+    const run = yield* s.resume.pipe(Effect.forkChild)
+    yield* Queue.take(scheduled)
+    yield* TestClock.adjust("2400 millis")
+    yield* Fiber.join(run)
+
+    expect(s.requests).toHaveLength(2)
+    expect(yield* recordedEventTypes(sessionID)).toContain("session.retry.scheduled.1")
+    const messages = yield* s.context
+    expect(messages.at(-1)).toMatchObject(Expected.assistant({ finish: "stop" }, [Expected.text("Recovered")]))
+    expect(messages).toHaveLength(3)
+  })
+
   scenario("uses a larger provider retry-after delay", function* (s) {
     yield* s.admit("Retry rate limit")
     yield* s.llm.push(Stream.fail(rateLimited(5_000)))

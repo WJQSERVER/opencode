@@ -238,7 +238,7 @@ it.effect("records the cost the endpoint reports instead of the catalog price", 
 it.effect("retries a finished stream without any output as an incomplete stream", () => {
   const logs: Array<Record<string, unknown>> = []
   const logger = Logger.map(Logger.formatStructured, (entry) => {
-    if (!Array.isArray(entry.message) || entry.message[0] !== "provider finished the step without any output") return
+    if (!Array.isArray(entry.message) || entry.message[0] !== "step finish snapshot") return
     const details = entry.message[1]
     if (typeof details === "object" && details !== null) logs.push(details as Record<string, unknown>)
   })
@@ -317,20 +317,17 @@ it.effect("retries a finished stream without any output as an incomplete stream"
     expect(cause?.reason).toMatchObject({ classification: "incomplete-stream" })
     expect(retryable).toBe(true)
     expect(logs).toHaveLength(1)
-    expect(logs[0]).toMatchObject({
-      classification: "incomplete-stream",
-      sessionID,
-      assistantMessageID,
-      finish: "stop",
-      rawFinish: "stop",
-    })
+    expect(logs[0]?.classification).toBe("step-finish")
+    expect(logs[0]?.sessionID).toBe(sessionID)
+    expect(logs[0]?.finish).toBe("stop")
+    expect(logs[0]?.rawFinish).toBe("stop")
   }).pipe(Effect.provide(Logger.layer([logger])))
 })
 
 it.effect("fails the step when retries are declined for a finished stream without any output", () => {
   const logs: Array<Record<string, unknown>> = []
   const logger = Logger.map(Logger.formatStructured, (entry) => {
-    if (!Array.isArray(entry.message) || entry.message[0] !== "provider finished the step without any output") return
+    if (!Array.isArray(entry.message) || entry.message[0] !== "step finish snapshot") return
     const details = entry.message[1]
     if (typeof details === "object" && details !== null) logs.push(details as Record<string, unknown>)
   })

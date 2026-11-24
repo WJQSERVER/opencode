@@ -67,6 +67,10 @@ const INPUT_FAILURES = {
 
 /** Immutable fold of the durable facts a step's writer has recorded so far. */
 export interface StepRecord {
+  /** The model touched a tool input this attempt, even if no call completed; this bars empty-finish retries. */
+  readonly toolActivity: boolean
+  /** The model produced visible text this attempt. Reasoning alone is not an answer and does not bar a retry. */
+  readonly visibleOutput: boolean
   /** The model produced visible output this attempt, which bars transparent retries and overflow recovery. */
   readonly outputStarted: boolean
   readonly providerFailed: boolean
@@ -124,6 +128,8 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
   let stepStarted = false
   let providerFailed = false
   let outputStarted = false
+  let visibleOutput = false
+  let toolActivity = false
   let stepFailure: SessionError.Error | undefined
   let stepSettlement: StepRecord["finish"]
 
@@ -439,6 +445,7 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
         return
       case "text-start":
         outputStarted = true
+        visibleOutput = true
         const startedTextOrdinal = yield* text.start(event.id, native(event.providerMetadata))
         yield* publishPendingDeltas()
         yield* bus.publish(SessionEvent.Text.Started, {
@@ -472,6 +479,7 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
         return
       case "tool-input-start":
         outputStarted = true
+        toolActivity = true
         yield* startToolInput(event)
         return
       case "tool-input-delta": {
@@ -488,10 +496,12 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
         return
       case "tool-input-error":
         outputStarted = true
+        toolActivity = true
         yield* failMalformedToolInput(event)
         return
       case "tool-call": {
         outputStarted = true
+        toolActivity = true
         const tool = tools.get(event.id) ?? (yield* startToolInput(event))
         if (toolInput.has(event.id)) yield* endToolInput(event)
         if (tool.name !== event.name)
@@ -614,6 +624,8 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
     /** Immutable snapshot of everything recorded for this step so far. */
     record: (): StepRecord => ({
       outputStarted,
+      visibleOutput,
+      toolActivity,
       providerFailed,
       failure: stepFailure,
       finish: stepSettlement,

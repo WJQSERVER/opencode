@@ -209,27 +209,32 @@ export const make = Effect.gen(function* () {
         }
 
         const recorded = publisher.record()
-        // A finished stream with no output and no tool calls produced nothing the transcript can show, like an
-        // incomplete stream. Snapshot the recorded finish for diagnosis; stop and tool-calls then retry as an
-        // incomplete stream below, while length keeps its output-limit recovery, which empty replies can trigger.
+        // Always record the finish shape: a provider can claim a tool-calls finish while emitting no call, and the
+        // old gate (outputStarted) counted reasoning as output, hiding the failure from logs and retries alike.
+        yield* Effect.logWarning("step finish snapshot", {
+          classification: "step-finish",
+          sessionID: input.sessionID,
+          finish: recorded.finish?.finish,
+          rawFinish: recorded.finish?.rawFinish,
+          outputStarted: recorded.outputStarted,
+          visibleOutput: recorded.visibleOutput,
+          toolActivity: recorded.toolActivity,
+          toolRuns: toolRuns.length,
+          providerFailed: recorded.providerFailed,
+          usage: recorded.finish?.usage,
+        })
+        // No visible text and no tool run with a normal finish leaves nothing for the transcript: retry it as an
+        // incomplete stream. Reasoning alone is not a reply, so it no longer suppresses this detection.
         const emptyFinish =
           Exit.isSuccess(stream) &&
           recorded.finish !== undefined &&
           !recorded.providerFailed &&
-          !recorded.outputStarted &&
-          toolRuns.length === 0
-        if (emptyFinish && recorded.finish)
-          yield* Effect.logWarning("provider finished the step without any output", {
-            classification: "incomplete-stream",
-            sessionID: input.sessionID,
-            assistantMessageID: input.assistantMessageID,
-            agent: input.agent,
-            model: input.model.ref,
-            finish: recorded.finish.finish,
-            rawFinish: recorded.finish.rawFinish,
-            usage: recorded.finish.usage,
-            native: recorded.finish.native,
-          })
+          toolRuns.length === 0 &&
+          // A plain empty stop is the original retry case; a tool-calls finish with no visible text or tool activity
+          // is the provider bug where reasoning announced a call that never arrived. Reasoning-only stops are valid.
+          (recorded.finish.finish === "tool-calls"
+            ? !recorded.visibleOutput && !recorded.toolActivity
+            : !recorded.outputStarted)
         const unknownFinish =
           Exit.isSuccess(stream) && recorded.finish?.finish === "unknown"
             ? new AIError({
