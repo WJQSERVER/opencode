@@ -17,6 +17,8 @@ export type WorkspaceLastUsed = Settings["workspaces"]["lastUsed"][string]
 
 export type FollowUpBehavior = Settings["general"]["followUpBehavior"]
 
+export type QuestionSubmitKey = Settings["general"]["questionSubmitKey"]
+
 export type BackgroundActivity = Settings["general"]["backgroundActivity"]
 
 export type TimelineWidth = Settings["general"]["timelineWidth"]
@@ -139,6 +141,8 @@ const generalSchema = Persistence.struct({
   forceTokenSpeed: Persistence.optional(Schema.Boolean),
   // Browser-style session tab grouping across vertical and horizontal tabs.
   tabGroups: Persistence.optional(Schema.Boolean),
+  // The Automations view in the sidebar and Home, off in releases until it ships.
+  automations: Persistence.optional(Schema.Boolean),
   // One side panel open state for every session tab, instead of one per tab.
   sharedSidePanel: Persistence.optional(Schema.Boolean),
   sidebarOrganize: Schema.Literals(["projects", "list", "customize", "recent", "consolidated"]),
@@ -146,6 +150,9 @@ const generalSchema = Persistence.struct({
   // Owned by the review plugin, which copies it out once; kept so settings rewrites cannot drop it first.
   mobileDiffWrap: Persistence.optional(Schema.Boolean),
   followUpBehavior: Schema.Literals(["queue", "steer"]),
+  // The key that moves a question dock on, or submits it on the last question. The other Enter selects an answer or
+  // starts a new line in the custom answer.
+  questionSubmitKey: Schema.Literals(["enter", "mod+enter"]),
 })
 
 const appearanceSchema = Persistence.struct({
@@ -157,6 +164,8 @@ const appearanceSchema = Persistence.struct({
   tabLayout: Schema.Literals(["horizontal", "vertical", "inbox"]),
   // Prototype (local/dev desktop builds): tabs at `tabLayout`'s position, or one list of every session.
   navigation: Persistence.optional(Schema.Literals(["tabs", "list"])),
+  // Prototype: open tabs grouped by their project or server.
+  tabGrouping: Persistence.optional(Schema.Literals(["none", "project", "server"])),
   sidebarOpen: Persistence.optional(Schema.Boolean),
   reduceMotion: Schema.Literals(["system", "on", "off"]),
 })
@@ -320,6 +329,7 @@ export const defaultSettings: Settings = {
     sidebarOrganize: "list",
     mobileTitlebarPosition: "top",
     followUpBehavior: "steer",
+    questionSubmitKey: "enter",
   },
   appearance: { fontSize: 14, mono: "", sans: "", terminal: "", tabLayout: "horizontal", reduceMotion: "system" },
   keybinds: {},
@@ -403,6 +413,12 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
     const autoApproveOverride = (project: ScopedKey | undefined) =>
       project ? store.permissions?.autoApproveProjects?.[project] : undefined
 
+    const sidebarOrganize = createMemo(() => {
+      const value = store.general?.sidebarOrganize
+
+      return sidebarOrganizeOptions.includes(value) ? value : defaultSettings.general.sidebarOrganize
+    })
+
     return {
       ready,
       get current() {
@@ -455,6 +471,13 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         setTabGroups(value: boolean) {
           setStore("general", "tabGroups", value)
         },
+        automations: withFallback(
+          () => store.general?.automations,
+          import.meta.env.DEV && import.meta.env.VITE_OPENCODE_TEST_FIXTURES !== "1",
+        ),
+        setAutomations(value: boolean) {
+          setStore("general", "automations", value)
+        },
         sharedSidePanel: withFallback(() => store.general?.sharedSidePanel, false),
         setSharedSidePanel(value: boolean) {
           setStore("general", "sharedSidePanel", value)
@@ -464,11 +487,7 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
           setStore("general", "newQuestionUI", value)
         },
         sidebarOrganizeOptions,
-        sidebarOrganize: createMemo(() => {
-          const value = store.general?.sidebarOrganize
-
-          return sidebarOrganizeOptions.includes(value) ? value : defaultSettings.general.sidebarOrganize
-        }),
+        sidebarOrganize,
         setSidebarOrganize(value: SidebarOrganize) {
           setStore("general", "sidebarOrganize", value)
         },
@@ -482,6 +501,13 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         followUpBehavior: withFallback(() => store.general?.followUpBehavior, defaultSettings.general.followUpBehavior),
         setFollowUpBehavior(value: FollowUpBehavior) {
           setStore("general", "followUpBehavior", value)
+        },
+        questionSubmitKey: withFallback(
+          () => store.general?.questionSubmitKey,
+          defaultSettings.general.questionSubmitKey,
+        ),
+        setQuestionSubmitKey(value: QuestionSubmitKey) {
+          setStore("general", "questionSubmitKey", value)
         },
       },
       visibility: {
@@ -521,12 +547,16 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         /** The navigation prototype (Experimental → Consolidated): pinned sessions and groups, and Tabs or List. */
         navigationPrototype: createMemo(() => prototypes && store.general?.sidebarOrganize === "consolidated"),
         navigation: createMemo(() =>
-          prototypes && store.general?.sidebarOrganize === "consolidated" && store.appearance?.navigation === "list"
-            ? "list"
-            : "tabs",
+          sidebarOrganize() === "consolidated" && store.appearance?.navigation === "list" ? "list" : "tabs",
         ),
         setNavigation(value: "tabs" | "list") {
           setStore("appearance", "navigation", value)
+        },
+        tabGrouping: createMemo(() =>
+          sidebarOrganize() === "consolidated" ? (store.appearance?.tabGrouping ?? "none") : "none",
+        ),
+        setTabGrouping(value: "none" | "project" | "server") {
+          setStore("appearance", "tabGrouping", value)
         },
         sidebarOpen: withFallback(() => store.appearance?.sidebarOpen, true),
         setSidebarOpen(value: boolean) {
