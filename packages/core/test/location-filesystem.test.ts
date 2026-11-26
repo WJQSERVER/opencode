@@ -65,6 +65,34 @@ describe("FileSystem", () => {
     ),
   )
 
+  it.live("lists symlinks by target type so linked directories are browsable", () =>
+    withTmp((directory) =>
+      Effect.gen(function* () {
+        const current = path.join(directory, "current")
+        const outside = path.join(directory, "outside")
+        yield* Effect.promise(async () => {
+          await fs.mkdir(current)
+          await fs.mkdir(outside)
+          await fs.writeFile(path.join(outside, "file.txt"), "outside")
+          await fs.writeFile(path.join(current, "plain.txt"), "plain")
+          await fs.symlink(outside, path.join(current, "linked"), "junction")
+          if (process.platform !== "win32")
+            await fs.symlink(path.join(directory, "missing"), path.join(current, "broken"))
+        })
+        yield* Effect.gen(function* () {
+          const filesystem = yield* FileSystem.Service
+          const entries = yield* filesystem.list()
+          const linked = entries.find((entry) => String(entry.path) === "linked" + path.sep)
+          expect(linked?.type).toBe("directory")
+          expect(entries.some((entry) => String(entry.path) === "broken")).toBe(false)
+          // Listing a linked directory exposes its children; reading them stays confined to the location.
+          const inside = yield* filesystem.list({ path: RelativePath.make("linked") })
+          expect(inside.map((entry) => String(entry.path))).toEqual([path.join("linked", "file.txt")])
+        }).pipe(provide(current))
+      }),
+    ),
+  )
+
   it.live("skips host canonicalization for workspace locations at boot", () =>
     withTmp((directory) =>
       Effect.gen(function* () {

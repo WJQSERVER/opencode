@@ -178,22 +178,40 @@ const baseLayer = Layer.effect(
           ),
         )
         if (info.type !== "Directory") return yield* missing
+        const entry = (name: string, isDirectory: boolean) => {
+          const absolute = path.join(directory, name)
+          const relative = path.relative(location.directory, absolute) || "."
+
+          return Entry.make({
+            path: RelativePath.make(relative + (isDirectory ? path.sep : "")),
+            type: isDirectory ? "directory" : "file",
+          })
+        }
         return yield* fs.readDirectoryEntries(directory).pipe(
           Effect.orDie,
-          Effect.map((items) =>
-            items
-              .flatMap((item) => {
-                if (item.type !== "File" && item.type !== "Directory") return []
-                const type = item.type === "Directory" ? "directory" : "file"
-                const absolute = path.join(directory, item.name)
-                const relative = path.relative(location.directory, absolute) || "."
-                return [
-                  Entry.make({
-                    path: RelativePath.make(relative + (type === "directory" ? path.sep : "")),
-                    type,
-                  }),
-                ]
-              })
+          Effect.flatMap((items) =>
+            Effect.forEach(
+              items,
+              (item) => {
+                if (item.type === "File" || item.type === "Directory")
+                  return Effect.succeed([entry(item.name, item.type === "Directory")])
+                // readDirectoryEntries reports links as their own type. stat follows them, so a link to a directory
+                // becomes a browsable directory in the picker; broken links and other types stay hidden.
+                return fs.stat(path.join(directory, item.name)).pipe(
+                  Effect.map((target) =>
+                    target.type === "File" || target.type === "Directory"
+                      ? [entry(item.name, target.type === "Directory")]
+                      : [],
+                  ),
+                  Effect.orElseSucceed(() => [] as ReturnType<typeof entry>[]),
+                )
+              },
+              { concurrency: 16 },
+            ),
+          ),
+          Effect.map((groups) =>
+            groups
+              .flat()
               .sort((a, b) => (a.type === b.type ? a.path.localeCompare(b.path) : a.type === "directory" ? -1 : 1)),
           ),
         )
